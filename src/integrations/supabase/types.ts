@@ -1221,7 +1221,6 @@ export type Database = {
           juros: number | null
           num_lote: string | null
           preco_av: number | null
-          preco_minimo: number | null
         }
         Insert: {
           created_at?: string | null
@@ -1231,7 +1230,6 @@ export type Database = {
           juros?: number | null
           num_lote?: string | null
           preco_av?: number | null
-          preco_minimo?: number | null
         }
         Update: {
           created_at?: string | null
@@ -1241,7 +1239,6 @@ export type Database = {
           juros?: number | null
           num_lote?: string | null
           preco_av?: number | null
-          preco_minimo?: number | null
         }
         Relationships: []
       }
