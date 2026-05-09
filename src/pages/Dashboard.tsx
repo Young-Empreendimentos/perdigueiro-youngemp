@@ -59,6 +59,10 @@ export default function Dashboard() {
   return (
     <div className="space-y-8">
 
+      <p className="text-lg font-medium text-muted-foreground">
+        Bom dia Elen
+      </p>
+
       {/* Meta Semestral */}
       {isLoading ? (
         <Skeleton className="h-28 rounded-lg" />
