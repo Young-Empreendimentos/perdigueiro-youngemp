@@ -1221,6 +1221,7 @@ export type Database = {
           juros: number | null
           num_lote: string | null
           preco_av: number | null
+          preco_minimo: number | null
         }
         Insert: {
           created_at?: string | null
@@ -1230,6 +1231,7 @@ export type Database = {
           juros?: number | null
           num_lote?: string | null
           preco_av?: number | null
+          preco_minimo?: number | null
         }
         Update: {
           created_at?: string | null
@@ -1239,6 +1241,7 @@ export type Database = {
           juros?: number | null
           num_lote?: string | null
           preco_av?: number | null
+          preco_minimo?: number | null
         }
         Relationships: []
       }
@@ -2310,8 +2313,10 @@ export type Database = {
           numero_logradouro: string | null
           numero_lote: string | null
           ordem_kanban: number
+          payload_raw: Json | null
           preco_lote: number | null
           qualificacao: Database["public"]["Enums"]["crm_qualificacao"]
+          rd_deal_id: string | null
           renda_familiar: string | null
           responsavel_id: string | null
           responsavel_venda_imobiliaria_id: string | null
@@ -2323,6 +2328,9 @@ export type Database = {
           status: Database["public"]["Enums"]["crm_deal_status"]
           tipo_residencia: string | null
           updated_at: string
+          utm_campaign: string | null
+          utm_medium: string | null
+          utm_source: string | null
           valor_entrada: number | null
           versao_tabela: string | null
         }
@@ -2350,8 +2358,10 @@ export type Database = {
           numero_logradouro?: string | null
           numero_lote?: string | null
           ordem_kanban?: number
+          payload_raw?: Json | null
           preco_lote?: number | null
           qualificacao?: Database["public"]["Enums"]["crm_qualificacao"]
+          rd_deal_id?: string | null
           renda_familiar?: string | null
           responsavel_id?: string | null
           responsavel_venda_imobiliaria_id?: string | null
@@ -2363,6 +2373,9 @@ export type Database = {
           status?: Database["public"]["Enums"]["crm_deal_status"]
           tipo_residencia?: string | null
           updated_at?: string
+          utm_campaign?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
           valor_entrada?: number | null
           versao_tabela?: string | null
         }
@@ -2390,8 +2403,10 @@ export type Database = {
           numero_logradouro?: string | null
           numero_lote?: string | null
           ordem_kanban?: number
+          payload_raw?: Json | null
           preco_lote?: number | null
           qualificacao?: Database["public"]["Enums"]["crm_qualificacao"]
+          rd_deal_id?: string | null
           renda_familiar?: string | null
           responsavel_id?: string | null
           responsavel_venda_imobiliaria_id?: string | null
@@ -2403,6 +2418,9 @@ export type Database = {
           status?: Database["public"]["Enums"]["crm_deal_status"]
           tipo_residencia?: string | null
           updated_at?: string
+          utm_campaign?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
           valor_entrada?: number | null
           versao_tabela?: string | null
         }
@@ -2440,6 +2458,47 @@ export type Database = {
             columns: ["responsavel_venda_imobiliaria_id"]
             isOneToOne: false
             referencedRelation: "imobiliarias"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_deals_checklist: {
+        Row: {
+          created_at: string
+          deal_id: string
+          id: string
+          label: string
+          ordem: number
+          rd_custom_field_id: string | null
+          updated_at: string
+          value: string
+        }
+        Insert: {
+          created_at?: string
+          deal_id: string
+          id?: string
+          label: string
+          ordem?: number
+          rd_custom_field_id?: string | null
+          updated_at?: string
+          value: string
+        }
+        Update: {
+          created_at?: string
+          deal_id?: string
+          id?: string
+          label?: string
+          ordem?: number
+          rd_custom_field_id?: string | null
+          updated_at?: string
+          value?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_deals_checklist_deal_id_fkey"
+            columns: ["deal_id"]
+            isOneToOne: false
+            referencedRelation: "crm_deals"
             referencedColumns: ["id"]
           },
         ]
@@ -2512,6 +2571,44 @@ export type Database = {
           nome?: string
         }
         Relationships: []
+      }
+      crm_rd_user_map: {
+        Row: {
+          ativo: boolean
+          consultor_id: string
+          created_at: string
+          rd_user_email: string | null
+          rd_user_id: string
+          rd_user_name: string
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          consultor_id: string
+          created_at?: string
+          rd_user_email?: string | null
+          rd_user_id: string
+          rd_user_name: string
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          consultor_id?: string
+          created_at?: string
+          rd_user_email?: string | null
+          rd_user_id?: string
+          rd_user_name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_rd_user_map_consultor_id_fkey"
+            columns: ["consultor_id"]
+            isOneToOne: false
+            referencedRelation: "crm_consultores"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       crm_task_images: {
         Row: {
@@ -2703,6 +2800,7 @@ export type Database = {
         Row: {
           arquiteta_id: string | null
           created_at: string
+          data_conclusao: string | null
           data_solicitacao: string
           empreendimento_id: string
           horas_estimadas: number | null
@@ -2719,6 +2817,7 @@ export type Database = {
         Insert: {
           arquiteta_id?: string | null
           created_at?: string
+          data_conclusao?: string | null
           data_solicitacao?: string
           empreendimento_id: string
           horas_estimadas?: number | null
@@ -2735,6 +2834,7 @@ export type Database = {
         Update: {
           arquiteta_id?: string | null
           created_at?: string
+          data_conclusao?: string | null
           data_solicitacao?: string
           empreendimento_id?: string
           horas_estimadas?: number | null
@@ -3549,6 +3649,33 @@ export type Database = {
           nome?: string
           telefone?: string | null
           updated_at?: string
+        }
+        Relationships: []
+      }
+      indices_monetarios: {
+        Row: {
+          ano: number
+          fonte: string
+          mes: number
+          tipo: string
+          updated_at: string
+          valor: number
+        }
+        Insert: {
+          ano: number
+          fonte?: string
+          mes: number
+          tipo: string
+          updated_at?: string
+          valor: number
+        }
+        Update: {
+          ano?: number
+          fonte?: string
+          mes?: number
+          tipo?: string
+          updated_at?: string
+          valor?: number
         }
         Relationships: []
       }
@@ -4379,6 +4506,47 @@ export type Database = {
         }
         Relationships: []
       }
+      rh_absenteismo: {
+        Row: {
+          created_at: string
+          dias_faltas: number
+          dias_trabalhados: number
+          funcionario_id: string
+          id: string
+          mes_referencia: string
+          observacoes: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          dias_faltas?: number
+          dias_trabalhados?: number
+          funcionario_id: string
+          id?: string
+          mes_referencia: string
+          observacoes?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          dias_faltas?: number
+          dias_trabalhados?: number
+          funcionario_id?: string
+          id?: string
+          mes_referencia?: string
+          observacoes?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rh_absenteismo_funcionario_id_fkey"
+            columns: ["funcionario_id"]
+            isOneToOne: false
+            referencedRelation: "rh_funcionarios"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       rh_adiantamentos: {
         Row: {
           created_at: string
@@ -4387,6 +4555,7 @@ export type Database = {
           funcionario_id: string
           id: string
           observacoes: string | null
+          parcelas: Json | null
           valor: number
         }
         Insert: {
@@ -4396,6 +4565,7 @@ export type Database = {
           funcionario_id: string
           id?: string
           observacoes?: string | null
+          parcelas?: Json | null
           valor?: number
         }
         Update: {
@@ -4405,6 +4575,7 @@ export type Database = {
           funcionario_id?: string
           id?: string
           observacoes?: string | null
+          parcelas?: Json | null
           valor?: number
         }
         Relationships: [
@@ -4555,6 +4726,47 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "rh_admissoes_desligamentos_funcionario_id_fkey"
+            columns: ["funcionario_id"]
+            isOneToOne: false
+            referencedRelation: "rh_funcionarios"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rh_advertencias: {
+        Row: {
+          arquivo_url: string | null
+          created_at: string
+          data: string
+          funcionario_id: string
+          id: string
+          motivo: string
+          tipo: string
+          updated_at: string
+        }
+        Insert: {
+          arquivo_url?: string | null
+          created_at?: string
+          data: string
+          funcionario_id: string
+          id?: string
+          motivo: string
+          tipo: string
+          updated_at?: string
+        }
+        Update: {
+          arquivo_url?: string | null
+          created_at?: string
+          data?: string
+          funcionario_id?: string
+          id?: string
+          motivo?: string
+          tipo?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rh_advertencias_funcionario_id_fkey"
             columns: ["funcionario_id"]
             isOneToOne: false
             referencedRelation: "rh_funcionarios"
@@ -4741,6 +4953,44 @@ export type Database = {
         }
         Relationships: []
       }
+      rh_folha_descontos: {
+        Row: {
+          created_at: string
+          folha_id: string
+          id: string
+          observacao: string | null
+          origem: string
+          tipo: string
+          valor: number
+        }
+        Insert: {
+          created_at?: string
+          folha_id: string
+          id?: string
+          observacao?: string | null
+          origem?: string
+          tipo: string
+          valor?: number
+        }
+        Update: {
+          created_at?: string
+          folha_id?: string
+          id?: string
+          observacao?: string | null
+          origem?: string
+          tipo?: string
+          valor?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rh_folha_descontos_folha_id_fkey"
+            columns: ["folha_id"]
+            isOneToOne: false
+            referencedRelation: "rh_folha_mensal"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       rh_folha_mensal: {
         Row: {
           anexo_holerite_path: string | null
@@ -4757,6 +5007,9 @@ export type Database = {
           plano_saude: number
           valor_comissoes: number
           valor_plr: number
+          valor_vr: number
+          vr_desconsiderado: boolean
+          vr_justificativa: string | null
         }
         Insert: {
           anexo_holerite_path?: string | null
@@ -4773,6 +5026,9 @@ export type Database = {
           plano_saude?: number
           valor_comissoes?: number
           valor_plr?: number
+          valor_vr?: number
+          vr_desconsiderado?: boolean
+          vr_justificativa?: string | null
         }
         Update: {
           anexo_holerite_path?: string | null
@@ -4789,6 +5045,9 @@ export type Database = {
           plano_saude?: number
           valor_comissoes?: number
           valor_plr?: number
+          valor_vr?: number
+          vr_desconsiderado?: boolean
+          vr_justificativa?: string | null
         }
         Relationships: [
           {
@@ -4796,6 +5055,56 @@ export type Database = {
             columns: ["funcionario_id"]
             isOneToOne: false
             referencedRelation: "rh_funcionarios"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rh_folha_reembolsos: {
+        Row: {
+          aprovado_em: string | null
+          aprovado_por: string | null
+          created_at: string
+          criado_por: string | null
+          folha_id: string
+          id: string
+          observacao: string | null
+          origem: string
+          status: string
+          tipo: string
+          valor: number
+        }
+        Insert: {
+          aprovado_em?: string | null
+          aprovado_por?: string | null
+          created_at?: string
+          criado_por?: string | null
+          folha_id: string
+          id?: string
+          observacao?: string | null
+          origem?: string
+          status?: string
+          tipo: string
+          valor?: number
+        }
+        Update: {
+          aprovado_em?: string | null
+          aprovado_por?: string | null
+          created_at?: string
+          criado_por?: string | null
+          folha_id?: string
+          id?: string
+          observacao?: string | null
+          origem?: string
+          status?: string
+          tipo?: string
+          valor?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rh_folha_reembolsos_folha_id_fkey"
+            columns: ["folha_id"]
+            isOneToOne: false
+            referencedRelation: "rh_folha_mensal"
             referencedColumns: ["id"]
           },
         ]
@@ -4835,6 +5144,53 @@ export type Database = {
           },
         ]
       }
+      rh_funcionario_beneficios_moradia: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          data_fim: string | null
+          data_inicio: string
+          funcionario_id: string
+          id: string
+          observacao: string | null
+          percentual_auxilio_moradia: number
+          updated_at: string
+          valor_reembolso_aluguel: number
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          data_fim?: string | null
+          data_inicio: string
+          funcionario_id: string
+          id?: string
+          observacao?: string | null
+          percentual_auxilio_moradia?: number
+          updated_at?: string
+          valor_reembolso_aluguel?: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          data_fim?: string | null
+          data_inicio?: string
+          funcionario_id?: string
+          id?: string
+          observacao?: string | null
+          percentual_auxilio_moradia?: number
+          updated_at?: string
+          valor_reembolso_aluguel?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rh_funcionario_beneficios_moradia_funcionario_id_fkey"
+            columns: ["funcionario_id"]
+            isOneToOne: false
+            referencedRelation: "rh_funcionarios"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       rh_funcionarios: {
         Row: {
           aniversario: string | null
@@ -4852,6 +5208,8 @@ export type Database = {
           nome_completo: string
           rg: string | null
           seguro_vida: boolean
+          telefone: string | null
+          tipo_contrato: string | null
           updated_at: string
         }
         Insert: {
@@ -4870,6 +5228,8 @@ export type Database = {
           nome_completo: string
           rg?: string | null
           seguro_vida?: boolean
+          telefone?: string | null
+          tipo_contrato?: string | null
           updated_at?: string
         }
         Update: {
@@ -4888,6 +5248,8 @@ export type Database = {
           nome_completo?: string
           rg?: string | null
           seguro_vida?: boolean
+          telefone?: string | null
+          tipo_contrato?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -4944,6 +5306,50 @@ export type Database = {
           {
             foreignKeyName: "rh_grupos_atividades_responsavel_id_fkey"
             columns: ["responsavel_id"]
+            isOneToOne: false
+            referencedRelation: "rh_funcionarios"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rh_plano_saude: {
+        Row: {
+          created_at: string
+          funcionario_id: string
+          id: string
+          mes_referencia: string
+          observacoes: string | null
+          updated_at: string
+          uso_plano: number
+          valor_odonto: number
+          valor_saude: number
+        }
+        Insert: {
+          created_at?: string
+          funcionario_id: string
+          id?: string
+          mes_referencia: string
+          observacoes?: string | null
+          updated_at?: string
+          uso_plano?: number
+          valor_odonto?: number
+          valor_saude?: number
+        }
+        Update: {
+          created_at?: string
+          funcionario_id?: string
+          id?: string
+          mes_referencia?: string
+          observacoes?: string | null
+          updated_at?: string
+          uso_plano?: number
+          valor_odonto?: number
+          valor_saude?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rh_plano_saude_funcionario_id_fkey"
+            columns: ["funcionario_id"]
             isOneToOne: false
             referencedRelation: "rh_funcionarios"
             referencedColumns: ["id"]
@@ -6633,6 +7039,25 @@ export type Database = {
           },
         ]
       }
+      vw_parcelas_mora_calculada: {
+        Row: {
+          bill_id: number | null
+          client_id: number | null
+          corrected_balance_amount: number | null
+          dias_atraso: number | null
+          due_date: string | null
+          indexer_name: string | null
+          installment_id: number | null
+          juros: number | null
+          juros_taxa_mes: number | null
+          juros_tipo: string | null
+          multa: number | null
+          pro_rata: number | null
+          tipo_indice: string | null
+          total_a_receber: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       esquadro_has_role: {
@@ -6661,6 +7086,25 @@ export type Database = {
         }[]
       }
       financeiro_fn_refresh_inadimplentes: { Args: never; Returns: undefined }
+      fn_parcelas_mora_calculada: {
+        Args: { _data_calculo?: string }
+        Returns: {
+          bill_id: number
+          client_id: number
+          corrected_balance_amount: number
+          dias_atraso: number
+          due_date: string
+          indexer_name: string
+          installment_id: number
+          juros: number
+          juros_taxa_mes: number
+          juros_tipo: string
+          multa: number
+          pro_rata: number
+          tipo_indice: string
+          total_a_receber: number
+        }[]
+      }
       get_all_users_with_roles: {
         Args: never
         Returns: {
