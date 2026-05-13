@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Kanban, Map, CalendarDays, FileText, Building, Building2 } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 
 const quickAccessItems = [
   {
