@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Kanban, Map, CalendarDays, FileText, Building, Building2 } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 
 const quickAccessItems = [
   {
@@ -14,6 +15,7 @@ const quickAccessItems = [
     description: "Visualize todas as glebas no mapa 3D com Google Earth",
     icon: Map,
     href: "/mapa",
+    adminOnly: true,
   },
   {
     title: "Propostas",
@@ -42,11 +44,17 @@ const quickAccessItems = [
 ];
 
 export function QuickAccess() {
+  const { isAdmin } = useAuth();
+
+  const filteredItems = quickAccessItems.filter(
+    (item) => !item.adminOnly || isAdmin
+  );
+
   return (
     <div>
       <h2 className="text-xl font-semibold mb-4">Acesso Rápido</h2>
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {quickAccessItems.map((item) => (
+        {filteredItems.map((item) => (
           <Link key={item.href} to={item.href}>
             <Card className="hover:border-primary/50 hover:bg-muted/50 transition-colors cursor-pointer h-full">
               <CardHeader>
