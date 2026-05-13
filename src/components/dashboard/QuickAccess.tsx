@@ -15,6 +15,7 @@ const quickAccessItems = [
     description: "Visualize todas as glebas no mapa 3D com Google Earth",
     icon: Map,
     href: "/mapa",
+    adminOnly: true,
   },
   {
     title: "Propostas",
