@@ -2507,6 +2507,8 @@ export type Database = {
         Row: {
           ativo: boolean
           cidade: string
+          codigo: string | null
+          codigo_interno: string | null
           created_at: string
           id: string
           nome: string
@@ -2515,6 +2517,8 @@ export type Database = {
         Insert: {
           ativo?: boolean
           cidade?: string
+          codigo?: string | null
+          codigo_interno?: string | null
           created_at?: string
           id?: string
           nome: string
@@ -2523,6 +2527,8 @@ export type Database = {
         Update: {
           ativo?: boolean
           cidade?: string
+          codigo?: string | null
+          codigo_interno?: string | null
           created_at?: string
           id?: string
           nome?: string
