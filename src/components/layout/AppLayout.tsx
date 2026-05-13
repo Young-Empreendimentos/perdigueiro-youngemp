@@ -44,7 +44,7 @@ interface NavItem {
 const navItems: NavItem[] = [
   { label: "Dashboard", href: "/", icon: <LayoutDashboard className="h-5 w-5" /> },
   { label: "Glebas", href: "/glebas", icon: <Kanban className="h-5 w-5" /> },
-  { label: "Mapa", href: "/mapa", icon: <Map className="h-5 w-5" /> },
+  { label: "Mapa", href: "/mapa", icon: <Map className="h-5 w-5" />, adminOnly: true },
   { label: "Propostas", href: "/propostas", icon: <FileText className="h-5 w-5" /> },
   { label: "Cidades", href: "/cidades", icon: <Building className="h-5 w-5" /> },
   { label: "Imobiliárias", href: "/imobiliarias", icon: <Building2 className="h-5 w-5" /> },

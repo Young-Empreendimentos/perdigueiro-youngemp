@@ -56,7 +56,7 @@ const App = () => (
             <Route
               path="/mapa"
               element={
-                <ProtectedRoute>
+                <ProtectedRoute requireAdmin>
                   <AppLayout>
                     <Mapa />
                   </AppLayout>
