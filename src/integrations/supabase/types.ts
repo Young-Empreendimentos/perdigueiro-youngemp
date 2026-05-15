@@ -919,6 +919,221 @@ export type Database = {
         }
         Relationships: []
       }
+      cobrancas_acoes: {
+        Row: {
+          anexo_nome: string | null
+          anexo_url: string | null
+          cobranca_id: string
+          concluida: boolean
+          created_at: string
+          created_by: string | null
+          data: string
+          descricao: string
+          id: string
+          prazo: string | null
+          tipo: Database["public"]["Enums"]["cobrancas_acao_tipo"]
+          tipo_acao_id: string | null
+        }
+        Insert: {
+          anexo_nome?: string | null
+          anexo_url?: string | null
+          cobranca_id: string
+          concluida?: boolean
+          created_at?: string
+          created_by?: string | null
+          data: string
+          descricao: string
+          id?: string
+          prazo?: string | null
+          tipo: Database["public"]["Enums"]["cobrancas_acao_tipo"]
+          tipo_acao_id?: string | null
+        }
+        Update: {
+          anexo_nome?: string | null
+          anexo_url?: string | null
+          cobranca_id?: string
+          concluida?: boolean
+          created_at?: string
+          created_by?: string | null
+          data?: string
+          descricao?: string
+          id?: string
+          prazo?: string | null
+          tipo?: Database["public"]["Enums"]["cobrancas_acao_tipo"]
+          tipo_acao_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cobrancas_acoes_cobranca_id_fkey"
+            columns: ["cobranca_id"]
+            isOneToOne: false
+            referencedRelation: "cobrancas_itens"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cobrancas_acoes_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "cobrancas_usuarios"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cobrancas_acoes_tipo_acao_id_fkey"
+            columns: ["tipo_acao_id"]
+            isOneToOne: false
+            referencedRelation: "cobrancas_tipos_acao"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cobrancas_custos: {
+        Row: {
+          acao_id: string
+          created_at: string
+          created_by: string | null
+          descricao: string | null
+          id: string
+          valor: number
+        }
+        Insert: {
+          acao_id: string
+          created_at?: string
+          created_by?: string | null
+          descricao?: string | null
+          id?: string
+          valor: number
+        }
+        Update: {
+          acao_id?: string
+          created_at?: string
+          created_by?: string | null
+          descricao?: string | null
+          id?: string
+          valor?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cobrancas_custos_acao_id_fkey"
+            columns: ["acao_id"]
+            isOneToOne: false
+            referencedRelation: "cobrancas_acoes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cobrancas_itens: {
+        Row: {
+          andamento: string
+          atraso_desde: string
+          cliente: string
+          created_at: string
+          created_by: string | null
+          empreendimento: Database["public"]["Enums"]["cobrancas_empreendimento"]
+          id: string
+          lote: string
+          prazo: string
+          responsavel: Database["public"]["Enums"]["cobrancas_responsavel"]
+          updated_at: string
+        }
+        Insert: {
+          andamento?: string
+          atraso_desde: string
+          cliente: string
+          created_at?: string
+          created_by?: string | null
+          empreendimento: Database["public"]["Enums"]["cobrancas_empreendimento"]
+          id?: string
+          lote: string
+          prazo: string
+          responsavel: Database["public"]["Enums"]["cobrancas_responsavel"]
+          updated_at?: string
+        }
+        Update: {
+          andamento?: string
+          atraso_desde?: string
+          cliente?: string
+          created_at?: string
+          created_by?: string | null
+          empreendimento?: Database["public"]["Enums"]["cobrancas_empreendimento"]
+          id?: string
+          lote?: string
+          prazo?: string
+          responsavel?: Database["public"]["Enums"]["cobrancas_responsavel"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cobrancas_itens_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "cobrancas_usuarios"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cobrancas_tipos_acao: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          custo_obrigatorio: boolean
+          id: string
+          nome: string
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          custo_obrigatorio?: boolean
+          id?: string
+          nome: string
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          custo_obrigatorio?: boolean
+          id?: string
+          nome?: string
+        }
+        Relationships: []
+      }
+      cobrancas_usuarios: {
+        Row: {
+          aprovado: boolean
+          created_at: string
+          email: string
+          id: string
+          nome: string
+          responsavel:
+            | Database["public"]["Enums"]["cobrancas_responsavel"]
+            | null
+          role: Database["public"]["Enums"]["cobrancas_role"]
+          senha_hash: string
+        }
+        Insert: {
+          aprovado?: boolean
+          created_at?: string
+          email: string
+          id?: string
+          nome: string
+          responsavel?:
+            | Database["public"]["Enums"]["cobrancas_responsavel"]
+            | null
+          role?: Database["public"]["Enums"]["cobrancas_role"]
+          senha_hash: string
+        }
+        Update: {
+          aprovado?: boolean
+          created_at?: string
+          email?: string
+          id?: string
+          nome?: string
+          responsavel?:
+            | Database["public"]["Enums"]["cobrancas_responsavel"]
+            | null
+          role?: Database["public"]["Enums"]["cobrancas_role"]
+          senha_hash?: string
+        }
+        Relationships: []
+      }
       comercial_clientes_itaqui: {
         Row: {
           bairro: string | null
@@ -2202,6 +2417,57 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      corretores_externos_sessoes: {
+        Row: {
+          ativo: boolean | null
+          bairro: string | null
+          cep: string | null
+          chat_id: string | null
+          cidade: string | null
+          created_at: string
+          creci: string | null
+          dados_bancarios: string | null
+          doc: string | null
+          email: string
+          endereco: string | null
+          nome: string | null
+          telefone: string | null
+          uf: string | null
+        }
+        Insert: {
+          ativo?: boolean | null
+          bairro?: string | null
+          cep?: string | null
+          chat_id?: string | null
+          cidade?: string | null
+          created_at?: string
+          creci?: string | null
+          dados_bancarios?: string | null
+          doc?: string | null
+          email: string
+          endereco?: string | null
+          nome?: string | null
+          telefone?: string | null
+          uf?: string | null
+        }
+        Update: {
+          ativo?: boolean | null
+          bairro?: string | null
+          cep?: string | null
+          chat_id?: string | null
+          cidade?: string | null
+          created_at?: string
+          creci?: string | null
+          dados_bancarios?: string | null
+          doc?: string | null
+          email?: string
+          endereco?: string | null
+          nome?: string | null
+          telefone?: string | null
+          uf?: string | null
+        }
+        Relationships: []
       }
       crm_consultores: {
         Row: {
@@ -3655,33 +3921,6 @@ export type Database = {
           nome?: string
           telefone?: string | null
           updated_at?: string
-        }
-        Relationships: []
-      }
-      indices_monetarios: {
-        Row: {
-          ano: number
-          fonte: string
-          mes: number
-          tipo: string
-          updated_at: string
-          valor: number
-        }
-        Insert: {
-          ano: number
-          fonte?: string
-          mes: number
-          tipo: string
-          updated_at?: string
-          valor: number
-        }
-        Update: {
-          ano?: number
-          fonte?: string
-          mes?: number
-          tipo?: string
-          updated_at?: string
-          valor?: number
         }
         Relationships: []
       }
@@ -7045,25 +7284,6 @@ export type Database = {
           },
         ]
       }
-      vw_parcelas_mora_calculada: {
-        Row: {
-          bill_id: number | null
-          client_id: number | null
-          corrected_balance_amount: number | null
-          dias_atraso: number | null
-          due_date: string | null
-          indexer_name: string | null
-          installment_id: number | null
-          juros: number | null
-          juros_taxa_mes: number | null
-          juros_tipo: string | null
-          multa: number | null
-          pro_rata: number | null
-          tipo_indice: string | null
-          total_a_receber: number | null
-        }
-        Relationships: []
-      }
     }
     Functions: {
       esquadro_has_role: {
@@ -7092,25 +7312,6 @@ export type Database = {
         }[]
       }
       financeiro_fn_refresh_inadimplentes: { Args: never; Returns: undefined }
-      fn_parcelas_mora_calculada: {
-        Args: { _data_calculo?: string }
-        Returns: {
-          bill_id: number
-          client_id: number
-          corrected_balance_amount: number
-          dias_atraso: number
-          due_date: string
-          indexer_name: string
-          installment_id: number
-          juros: number
-          juros_taxa_mes: number
-          juros_tipo: string
-          multa: number
-          pro_rata: number
-          tipo_indice: string
-          total_a_receber: number
-        }[]
-      }
       get_all_users_with_roles: {
         Args: never
         Returns: {
@@ -7179,6 +7380,19 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "user"
+      cobrancas_acao_tipo: "realizada" | "agendada"
+      cobrancas_empreendimento:
+        | "Aurora"
+        | "Erico Verissimo"
+        | "Morada da Coxilha"
+        | "Algarve"
+        | "Montecarlo"
+        | "Ilha dos Açores"
+        | "Lorena 1"
+        | "Lorena 2"
+        | "Jardim do Parque"
+      cobrancas_responsavel: "Gabrielle" | "Antonio" | "Lais" | "Suelen"
+      cobrancas_role: "admin" | "comum"
       crm_deal_status:
         | "lead_recebido"
         | "contato_feito"
@@ -7338,6 +7552,20 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "user"],
+      cobrancas_acao_tipo: ["realizada", "agendada"],
+      cobrancas_empreendimento: [
+        "Aurora",
+        "Erico Verissimo",
+        "Morada da Coxilha",
+        "Algarve",
+        "Montecarlo",
+        "Ilha dos Açores",
+        "Lorena 1",
+        "Lorena 2",
+        "Jardim do Parque",
+      ],
+      cobrancas_responsavel: ["Gabrielle", "Antonio", "Lais", "Suelen"],
+      cobrancas_role: ["admin", "comum"],
       crm_deal_status: [
         "lead_recebido",
         "contato_feito",
