@@ -46,11 +46,29 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 export default function PesquisasMercado() {
-  const { pesquisas, isLoading, createPesquisa, deletePesquisa } = usePesquisasMercado();
+  const { pesquisas, isLoading, createPesquisa, updatePesquisa, deletePesquisa } = usePesquisasMercado();
   const { cidades } = useCidades();
   const [createOpen, setCreateOpen] = useState(false);
   const [selectedPesquisa, setSelectedPesquisa] = useState<PesquisaMercado | null>(null);
   const [search, setSearch] = useState("");
+  const [renamingId, setRenamingId] = useState<string | null>(null);
+  const [renameValue, setRenameValue] = useState("");
+
+  const openRename = (p: PesquisaMercado) => {
+    setRenamingId(p.id);
+    setRenameValue(p.nome);
+  };
+
+  const handleRename = async () => {
+    if (!renamingId || !renameValue.trim()) { toast.error("Informe o nome"); return; }
+    try {
+      await updatePesquisa.mutateAsync({ id: renamingId, nome: renameValue.trim() });
+      toast.success("Nome atualizado!");
+      setRenamingId(null);
+    } catch {
+      toast.error("Erro ao atualizar nome");
+    }
+  };
 
   // Create form
   const [nome, setNome] = useState("");
@@ -180,33 +198,64 @@ export default function PesquisasMercado() {
               <CardContent>
                 <div className="flex items-center justify-between">
                   {pesquisa.observacoes && <p className="text-xs text-muted-foreground truncate flex-1">{pesquisa.observacoes}</p>}
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Button
-                        variant="ghost" size="icon"
-                        className="h-7 w-7 opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent onClick={(e) => e.stopPropagation()}>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>Excluir pesquisa?</AlertDialogTitle>
-                        <AlertDialogDescription>Todos os terrenos associados serão removidos.</AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                        <AlertDialogAction onClick={() => handleDelete(pesquisa.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Excluir</AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
+                  <div className="flex items-center gap-1 ml-auto">
+                    <Button
+                      variant="ghost" size="icon"
+                      className="h-7 w-7 opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-foreground"
+                      onClick={(e) => { e.stopPropagation(); openRename(pesquisa); }}
+                      title="Renomear"
+                    >
+                      <Pencil className="h-3.5 w-3.5" />
+                    </Button>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button
+                          variant="ghost" size="icon"
+                          className="h-7 w-7 opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent onClick={(e) => e.stopPropagation()}>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Excluir pesquisa?</AlertDialogTitle>
+                          <AlertDialogDescription>Todos os terrenos associados serão removidos.</AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                          <AlertDialogAction onClick={() => handleDelete(pesquisa.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Excluir</AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </div>
                 </div>
               </CardContent>
             </Card>
           ))}
         </div>
       )}
+
+      <Dialog open={!!renamingId} onOpenChange={(o) => !o && setRenamingId(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Renomear pesquisa</DialogTitle>
+            <DialogDescription>Altere o título do card da pesquisa.</DialogDescription>
+          </DialogHeader>
+          <div className="py-2">
+            <Input
+              value={renameValue}
+              onChange={(e) => setRenameValue(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter") handleRename(); }}
+              autoFocus
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRenamingId(null)}>Cancelar</Button>
+            <Button onClick={handleRename} disabled={updatePesquisa.isPending}>Salvar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
