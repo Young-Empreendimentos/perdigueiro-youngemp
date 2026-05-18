@@ -64,12 +64,12 @@ export function useDashboardStats() {
 
       // Buscar dados em paralelo
       const [glebasResult, propostasResult, cidadesResult, atividadesResult, negociosSemestreResult, recentAtividadesResult] = await Promise.all([
-        supabase.from("glebas").select("id, status, prioridade, numero, apelido, cidade_id, tamanho_m2, preco, data_visita, arquivo_protocolo, motivo_descarte_id, arquivo_contrato, data_fechamento, standby_motivo"),
-        supabase.from("propostas").select("id, data_proposta"),
-        supabase.from("cidades").select("id"),
-        supabase.from("atividades").select("id, data"),
-        supabase.from("glebas").select("id, numero, apelido, cidade_id, data_fechamento").eq("status", "negocio_fechado").gte("data_fechamento", semesterStart.toISOString().split("T")[0]),
-        supabase.from("atividades").select("gleba_id").gte("created_at", subDays(now, 10).toISOString()),
+        supabase.from("glebas").select("id, status, prioridade, numero, apelido, cidade_id, tamanho_m2, preco, data_visita, arquivo_protocolo, motivo_descarte_id, arquivo_contrato, data_fechamento, standby_motivo").range(0, 99999),
+        supabase.from("propostas").select("id, data_proposta").range(0, 99999),
+        supabase.from("cidades").select("id").range(0, 99999),
+        supabase.from("atividades").select("id, data").range(0, 99999),
+        supabase.from("glebas").select("id, numero, apelido, cidade_id, data_fechamento").eq("status", "negocio_fechado").gte("data_fechamento", semesterStart.toISOString().split("T")[0]).range(0, 99999),
+        supabase.from("atividades").select("gleba_id").gte("created_at", subDays(now, 10).toISOString()).range(0, 99999),
       ]);
 
       if (glebasResult.error) throw glebasResult.error;
