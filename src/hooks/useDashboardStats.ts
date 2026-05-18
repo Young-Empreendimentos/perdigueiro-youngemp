@@ -49,6 +49,26 @@ const STATUS_LABELS: Record<string, string> = {
   standby: "Standby",
 };
 
+const PAGE_SIZE = 1000;
+
+async function fetchAllPages<T>(createQuery: (from: number, to: number) => any): Promise<T[]> {
+  const allRows: T[] = [];
+  let from = 0;
+
+  while (true) {
+    const { data, error } = await createQuery(from, from + PAGE_SIZE - 1);
+    if (error) throw error;
+
+    const rows = (data || []) as T[];
+    allRows.push(...rows);
+
+    if (rows.length < PAGE_SIZE) break;
+    from += PAGE_SIZE;
+  }
+
+  return allRows;
+}
+
 export function useDashboardStats() {
   return useQuery({
     queryKey: ["dashboard-stats"],
@@ -62,25 +82,15 @@ export function useDashboardStats() {
       const cutoffDate = new Date("2026-03-10T00:00:00");
       const semesterStart = semesterStartDate > cutoffDate ? semesterStartDate : cutoffDate;
 
-      // Buscar dados em paralelo
-      const [glebasResult, propostasResult, cidadesResult, atividadesResult, negociosSemestreResult, recentAtividadesResult] = await Promise.all([
-        supabase.from("glebas").select("id, status, prioridade, numero, apelido, cidade_id, tamanho_m2, preco, data_visita, arquivo_protocolo, motivo_descarte_id, arquivo_contrato, data_fechamento, standby_motivo").range(0, 99999),
-        supabase.from("propostas").select("id, data_proposta").range(0, 99999),
-        supabase.from("cidades").select("id").range(0, 99999),
-        supabase.from("atividades").select("id, data").range(0, 99999),
-        supabase.from("glebas").select("id, numero, apelido, cidade_id, data_fechamento").eq("status", "negocio_fechado").gte("data_fechamento", semesterStart.toISOString().split("T")[0]).range(0, 99999),
-        supabase.from("atividades").select("gleba_id").gte("created_at", subDays(now, 10).toISOString()).range(0, 99999),
+      // Buscar dados em páginas de 1000 linhas para não cair no limite padrão do Supabase/PostgREST
+      const [glebas, propostas, cidades, atividades, negociosSemestre, recentAtividades] = await Promise.all([
+        fetchAllPages<any>((from, to) => supabase.from("glebas").select("id, status, prioridade, numero, apelido, cidade_id, tamanho_m2, preco, data_visita, arquivo_protocolo, motivo_descarte_id, arquivo_contrato, data_fechamento, standby_motivo").range(from, to)),
+        fetchAllPages<any>((from, to) => supabase.from("propostas").select("id, data_proposta").range(from, to)),
+        fetchAllPages<any>((from, to) => supabase.from("cidades").select("id").range(from, to)),
+        fetchAllPages<any>((from, to) => supabase.from("atividades").select("id, data").range(from, to)),
+        fetchAllPages<any>((from, to) => supabase.from("glebas").select("id, numero, apelido, cidade_id, data_fechamento").eq("status", "negocio_fechado").gte("data_fechamento", semesterStart.toISOString().split("T")[0]).range(from, to)),
+        fetchAllPages<any>((from, to) => supabase.from("atividades").select("gleba_id").gte("created_at", subDays(now, 10).toISOString()).range(from, to)),
       ]);
-
-      if (glebasResult.error) throw glebasResult.error;
-      if (propostasResult.error) throw propostasResult.error;
-      if (cidadesResult.error) throw cidadesResult.error;
-      if (negociosSemestreResult.error) throw negociosSemestreResult.error;
-
-      const glebas = glebasResult.data || [];
-      const propostas = propostasResult.data || [];
-      const cidades = cidadesResult.data || [];
-      const atividades = atividadesResult.data || [];
 
       // Contadores básicos
       const totalGlebas = glebas.length;
@@ -94,8 +104,8 @@ export function useDashboardStats() {
       });
 
       const negociosFechados = glebasPorStatus["negocio_fechado"] || 0;
-      const negociosFechadosSemestre = negociosSemestreResult.data?.length || 0;
-      const negociosFechadosSemestreList: NegocioFechado[] = (negociosSemestreResult.data || []).map((g: any) => ({
+      const negociosFechadosSemestre = negociosSemestre.length;
+      const negociosFechadosSemestreList: NegocioFechado[] = negociosSemestre.map((g: any) => ({
         id: g.id, numero: g.numero, apelido: g.apelido, cidade_id: g.cidade_id,
       }));
       const glebasEmStandby = glebasPorStatus["standby"] || 0;
@@ -110,7 +120,7 @@ export function useDashboardStats() {
       // Glebas inativas (sem atividade nos últimos 10 dias, excluindo descartada/negocio_fechado)
       const excludedStatuses = ["descartada", "negocio_fechado", "proposta_recusada", "standby"];
       const activeGlebaIds = new Set(
-        (recentAtividadesResult.data || []).map((a) => a.gleba_id).filter(Boolean)
+        recentAtividades.map((a) => a.gleba_id).filter(Boolean)
       );
       const glebasInativas: InactiveGleba[] = glebas
         .filter((g) => !excludedStatuses.includes(g.status) && !activeGlebaIds.has(g.id))
