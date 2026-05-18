@@ -39,7 +39,8 @@ export function useGlebas() {
       const { data, error } = await supabase
         .from("glebas")
         .select("*")
-        .order("created_at", { ascending: false });
+        .order("created_at", { ascending: false })
+        .range(0, 99999);
 
       if (error) throw error;
       return data as Gleba[];
