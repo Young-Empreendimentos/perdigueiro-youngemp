@@ -323,7 +323,7 @@ export function GlebaDetailsDialog({
               ) : (
                 <div className="flex items-center gap-2 text-muted-foreground text-sm">
                   <ImagePlus className="h-5 w-5" />
-                  Adicionar imagem de capa
+                  Adicionar imagem de capa (clique ou cole com Ctrl+V)
                 </div>
               )}
             </div>
