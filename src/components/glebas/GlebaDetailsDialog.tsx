@@ -180,6 +180,8 @@ export function GlebaDetailsDialog({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, gleba?.id]);
 
+  if (!gleba) return null;
+
   const handleRemoveImage = async () => {
     try {
       await updateGleba(gleba.id, { imagem_capa: null } as any);
