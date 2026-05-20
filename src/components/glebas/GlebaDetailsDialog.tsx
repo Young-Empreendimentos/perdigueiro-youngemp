@@ -120,7 +120,7 @@ export function GlebaDetailsDialog({
 
   const [loadingFile, setLoadingFile] = useState<string | null>(null);
 
-  if (!gleba) return null;
+  
 
   const uploadImageFile = async (file: File) => {
     if (file.size > 10 * 1024 * 1024) {
