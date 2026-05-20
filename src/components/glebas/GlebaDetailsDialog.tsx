@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { Tables } from "@/integrations/supabase/types";
@@ -120,22 +120,20 @@ export function GlebaDetailsDialog({
 
   const [loadingFile, setLoadingFile] = useState<string | null>(null);
 
-  if (!gleba) return null;
+  
 
-  const handleImageUpload = async (files: FileList | null) => {
-    if (!files || files.length === 0) return;
-    const file = files[0];
+  const uploadImageFile = async (file: File) => {
     if (file.size > 10 * 1024 * 1024) {
       toast.error("Imagem excede 10MB");
       return;
     }
     setUploadingImage(true);
     try {
-      const ext = file.name.split(".").pop();
+      const ext = (file.name.split(".").pop() || "png").toLowerCase();
       const fileName = `${gleba.id}/capa-${Date.now()}.${ext}`;
       const { error: uploadError } = await supabase.storage
         .from("gleba-imagens")
-        .upload(fileName, file, { upsert: true });
+        .upload(fileName, file, { upsert: true, contentType: file.type || undefined });
       if (uploadError) throw uploadError;
 
       const { data: urlData } = supabase.storage
@@ -151,6 +149,38 @@ export function GlebaDetailsDialog({
       if (imageInputRef.current) imageInputRef.current.value = "";
     }
   };
+
+  const handleImageUpload = async (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+    await uploadImageFile(files[0]);
+  };
+
+  useEffect(() => {
+    if (!open || !gleba) return;
+    const handlePaste = (e: ClipboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable)) {
+        return;
+      }
+      const items = e.clipboardData?.items;
+      if (!items) return;
+      for (const item of Array.from(items)) {
+        if (item.type.startsWith("image/")) {
+          const file = item.getAsFile();
+          if (file) {
+            e.preventDefault();
+            uploadImageFile(file);
+            break;
+          }
+        }
+      }
+    };
+    window.addEventListener("paste", handlePaste);
+    return () => window.removeEventListener("paste", handlePaste);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, gleba?.id]);
+
+  if (!gleba) return null;
 
   const handleRemoveImage = async () => {
     try {
@@ -293,7 +323,7 @@ export function GlebaDetailsDialog({
               ) : (
                 <div className="flex items-center gap-2 text-muted-foreground text-sm">
                   <ImagePlus className="h-5 w-5" />
-                  Adicionar imagem de capa
+                  Adicionar imagem de capa (clique ou cole com Ctrl+V)
                 </div>
               )}
             </div>
