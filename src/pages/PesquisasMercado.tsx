@@ -43,6 +43,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { usePesquisasMercado, usePesquisaTerrenos, PesquisaMercado, PesquisaTerreno } from "@/hooks/usePesquisasMercado";
 import { useCidades } from "@/hooks/useCidades";
 import { supabase } from "@/integrations/supabase/client";
+import { parseCoordinatesInput } from "@/lib/coordinateParser";
 import { toast } from "sonner";
 
 export default function PesquisasMercado() {
@@ -276,13 +277,6 @@ function emptyForm(): TerrenoFormState {
   return { nome: "", preco: "", tamanho_m2: "", condicoes_pagamento: "", tipo_terreno: "", observacoes: "", url_anuncio: "", coordenadas: "", imagem_url: null };
 }
 
-function parseCoords(s: string): { lat: number | null; lng: number | null } {
-  if (!s.trim()) return { lat: null, lng: null };
-  const m = s.replace(/\s/g, "").match(/^(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)$/);
-  if (!m) return { lat: NaN, lng: NaN };
-  return { lat: parseFloat(m[1]), lng: parseFloat(m[2]) };
-}
-
 function PesquisaDetail({ pesquisa, onBack }: { pesquisa: PesquisaMercado; onBack: () => void }) {
   const { terrenos, isLoading, createTerreno, updateTerreno, deleteTerreno } = usePesquisaTerrenos(pesquisa.id);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -343,9 +337,9 @@ function PesquisaDetail({ pesquisa, onBack }: { pesquisa: PesquisaMercado; onBac
 
   const handleSubmit = async () => {
     if (!form.nome.trim()) { toast.error("Informe o nome"); return; }
-    const coords = parseCoords(form.coordenadas);
+    const coords = parseCoordinatesInput(form.coordenadas);
     if (form.coordenadas && (Number.isNaN(coords.lat) || Number.isNaN(coords.lng))) {
-      toast.error("Coordenadas inválidas. Use: lat, lng");
+      toast.error("Coordenadas inválidas. Use latitude/longitude ou UTM com zona (ex: 22J 500000 7400000)");
       return;
     }
     const payload = {
@@ -420,7 +414,7 @@ function PesquisaDetail({ pesquisa, onBack }: { pesquisa: PesquisaMercado; onBac
             <Input placeholder="Condições de pagamento" value={form.condicoes_pagamento} onChange={(e) => setForm({ ...form, condicoes_pagamento: e.target.value })} />
             <Input placeholder="Tipo do terreno" value={form.tipo_terreno} onChange={(e) => setForm({ ...form, tipo_terreno: e.target.value })} />
             <Input placeholder="URL do anúncio" value={form.url_anuncio} onChange={(e) => setForm({ ...form, url_anuncio: e.target.value })} />
-            <Input placeholder="Coordenadas (lat, lng) — ex: -29.7869, -55.7619" value={form.coordenadas} onChange={(e) => setForm({ ...form, coordenadas: e.target.value })} />
+            <Input placeholder="Coordenadas — lat/lng ou UTM com zona" value={form.coordenadas} onChange={(e) => setForm({ ...form, coordenadas: e.target.value })} />
             <Textarea placeholder="Observações" value={form.observacoes} onChange={(e) => setForm({ ...form, observacoes: e.target.value })} rows={2} />
 
             <div className="space-y-2">
