@@ -233,15 +233,27 @@ export function GlebaAtividades({ glebaId }: GlebaAtividadesProps) {
           </SelectContent>
         </Select>
 
-        <div className="flex gap-2">
-          <Textarea
-            placeholder="Adicionar atividade..."
-            value={novaAtividade}
-            onChange={(e) => setNovaAtividade(e.target.value)}
-            onKeyDown={handleKeyDown}
-            className="min-h-[60px] resize-none"
-            disabled={isSubmitting}
-          />
+        <div className="flex gap-2 items-start">
+          <div className="relative flex-1">
+            <Textarea
+              placeholder="Adicionar atividade..."
+              value={novaAtividade}
+              onChange={(e) => setNovaAtividade(e.target.value)}
+              onKeyDown={handleKeyDown}
+              className={`${expandido ? "min-h-[300px]" : "min-h-[60px]"} resize-none pr-9 transition-[min-height]`}
+              disabled={isSubmitting}
+            />
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              onClick={() => setExpandido((v) => !v)}
+              className="absolute top-1 right-1 h-7 w-7"
+              title={expandido ? "Recolher" : "Expandir"}
+            >
+              {expandido ? <Minimize2 className="h-3.5 w-3.5" /> : <Maximize2 className="h-3.5 w-3.5" />}
+            </Button>
+          </div>
           <Button
             size="icon"
             onClick={handleSubmit}
