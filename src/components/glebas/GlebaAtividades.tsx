@@ -12,7 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Loader2, Send, MessageCircle, Trash2, User } from "lucide-react";
+import { Loader2, Send, MessageCircle, Trash2, User, Maximize2, Minimize2 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
@@ -35,6 +35,7 @@ interface Atividade {
 export function GlebaAtividades({ glebaId }: GlebaAtividadesProps) {
   const [novaAtividade, setNovaAtividade] = useState("");
   const [tipoAtividadeId, setTipoAtividadeId] = useState<string | null>(null);
+  const [expandido, setExpandido] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const queryClient = useQueryClient();
   const { user, isAdmin } = useAuth();
@@ -232,15 +233,27 @@ export function GlebaAtividades({ glebaId }: GlebaAtividadesProps) {
           </SelectContent>
         </Select>
 
-        <div className="flex gap-2">
-          <Textarea
-            placeholder="Adicionar atividade..."
-            value={novaAtividade}
-            onChange={(e) => setNovaAtividade(e.target.value)}
-            onKeyDown={handleKeyDown}
-            className="min-h-[60px] resize-none"
-            disabled={isSubmitting}
-          />
+        <div className="flex gap-2 items-start">
+          <div className="relative flex-1">
+            <Textarea
+              placeholder="Adicionar atividade..."
+              value={novaAtividade}
+              onChange={(e) => setNovaAtividade(e.target.value)}
+              onKeyDown={handleKeyDown}
+              className={`${expandido ? "min-h-[300px]" : "min-h-[60px]"} resize-none pr-9 transition-[min-height]`}
+              disabled={isSubmitting}
+            />
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              onClick={() => setExpandido((v) => !v)}
+              className="absolute top-1 right-1 h-7 w-7"
+              title={expandido ? "Recolher" : "Expandir"}
+            >
+              {expandido ? <Minimize2 className="h-3.5 w-3.5" /> : <Maximize2 className="h-3.5 w-3.5" />}
+            </Button>
+          </div>
           <Button
             size="icon"
             onClick={handleSubmit}

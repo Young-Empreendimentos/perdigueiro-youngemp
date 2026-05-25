@@ -2502,6 +2502,38 @@ export type Database = {
         }
         Relationships: []
       }
+      crm_deal_anotacoes: {
+        Row: {
+          created_at: string
+          deal_id: string
+          id: string
+          texto: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          deal_id: string
+          id?: string
+          texto: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          deal_id?: string
+          id?: string
+          texto?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_deal_anotacoes_deal_id_fkey"
+            columns: ["deal_id"]
+            isOneToOne: false
+            referencedRelation: "crm_deals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       crm_deal_images: {
         Row: {
           deal_id: string
@@ -2568,6 +2600,9 @@ export type Database = {
       }
       crm_deals: {
         Row: {
+          auto_interesse: string | null
+          auto_renda_familiar: string | null
+          auto_valor_entrada: number | null
           cidade_cliente: string | null
           cliente_email: string | null
           cliente_nome: string
@@ -2613,6 +2648,9 @@ export type Database = {
           versao_tabela: string | null
         }
         Insert: {
+          auto_interesse?: string | null
+          auto_renda_familiar?: string | null
+          auto_valor_entrada?: number | null
           cidade_cliente?: string | null
           cliente_email?: string | null
           cliente_nome: string
@@ -2658,6 +2696,9 @@ export type Database = {
           versao_tabela?: string | null
         }
         Update: {
+          auto_interesse?: string | null
+          auto_renda_familiar?: string | null
+          auto_valor_entrada?: number | null
           cidade_cliente?: string | null
           cliente_email?: string | null
           cliente_nome?: string
@@ -2935,6 +2976,7 @@ export type Database = {
           descricao: string | null
           id: string
           responsavel_id: string
+          tipo: string | null
           titulo: string
           updated_at: string
         }
@@ -2946,6 +2988,7 @@ export type Database = {
           descricao?: string | null
           id?: string
           responsavel_id: string
+          tipo?: string | null
           titulo: string
           updated_at?: string
         }
@@ -2957,6 +3000,7 @@ export type Database = {
           descricao?: string | null
           id?: string
           responsavel_id?: string
+          tipo?: string | null
           titulo?: string
           updated_at?: string
         }
@@ -4751,6 +4795,7 @@ export type Database = {
           conferencia_renegociacoes: string | null
           conjuge_bate_contrato: string | null
           contrato_url: string | null
+          criado_por_id: number | null
           data_solicitacao: string | null
           desistencia: boolean | null
           empreendimento: string | null
@@ -4782,6 +4827,7 @@ export type Database = {
           conferencia_renegociacoes?: string | null
           conjuge_bate_contrato?: string | null
           contrato_url?: string | null
+          criado_por_id?: number | null
           data_solicitacao?: string | null
           desistencia?: boolean | null
           empreendimento?: string | null
@@ -4813,6 +4859,7 @@ export type Database = {
           conferencia_renegociacoes?: string | null
           conjuge_bate_contrato?: string | null
           contrato_url?: string | null
+          criado_por_id?: number | null
           data_solicitacao?: string | null
           desistencia?: boolean | null
           empreendimento?: string | null
@@ -4834,7 +4881,15 @@ export type Database = {
           tipo_escritura?: string | null
           valores_pagos_recebidos?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "posvenda_conferencia_escritura_criado_por_id_fkey"
+            columns: ["criado_por_id"]
+            isOneToOne: false
+            referencedRelation: "posvenda_user"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       posvenda_configuracao_opcao: {
         Row: {
@@ -4877,6 +4932,7 @@ export type Database = {
           contrato_caixa_url: string | null
           contratos_internos_url: string | null
           cpf: string | null
+          criado_por_id: number | null
           empreendimento: string | null
           id: number
           imobiliaria: string | null
@@ -4903,6 +4959,7 @@ export type Database = {
           contrato_caixa_url?: string | null
           contratos_internos_url?: string | null
           cpf?: string | null
+          criado_por_id?: number | null
           empreendimento?: string | null
           id?: number
           imobiliaria?: string | null
@@ -4929,6 +4986,7 @@ export type Database = {
           contrato_caixa_url?: string | null
           contratos_internos_url?: string | null
           cpf?: string | null
+          criado_por_id?: number | null
           empreendimento?: string | null
           id?: number
           imobiliaria?: string | null
@@ -4945,7 +5003,15 @@ export type Database = {
           valores_pagos_url?: string | null
           vencimento_data?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "posvenda_contrato_caixa_criado_por_id_fkey"
+            columns: ["criado_por_id"]
+            isOneToOne: false
+            referencedRelation: "posvenda_user"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       posvenda_distrato_nao_registrado: {
         Row: {
@@ -4953,6 +5019,7 @@ export type Database = {
           aprovacao_geral: string | null
           aprovacao_inicial_distrato_por: string | null
           aprovacao_minuta_distrato_por: string | null
+          criado_por_id: number | null
           data_solicitacao: string | null
           debito_condominio_assoc: number | null
           debito_iptu: number | null
@@ -4976,6 +5043,7 @@ export type Database = {
           aprovacao_geral?: string | null
           aprovacao_inicial_distrato_por?: string | null
           aprovacao_minuta_distrato_por?: string | null
+          criado_por_id?: number | null
           data_solicitacao?: string | null
           debito_condominio_assoc?: number | null
           debito_iptu?: number | null
@@ -4999,6 +5067,7 @@ export type Database = {
           aprovacao_geral?: string | null
           aprovacao_inicial_distrato_por?: string | null
           aprovacao_minuta_distrato_por?: string | null
+          criado_por_id?: number | null
           data_solicitacao?: string | null
           debito_condominio_assoc?: number | null
           debito_iptu?: number | null
@@ -5017,7 +5086,15 @@ export type Database = {
           numero_lote?: string | null
           status?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "posvenda_distrato_nao_registrado_criado_por_id_fkey"
+            columns: ["criado_por_id"]
+            isOneToOne: false
+            referencedRelation: "posvenda_user"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       posvenda_distrato_registrado: {
         Row: {
@@ -5025,6 +5102,7 @@ export type Database = {
           aprovacao_distrato_inicial_por: string | null
           aprovacao_minutas_finais_por: string | null
           atualiza_estoque_legal: boolean | null
+          criado_por_id: number | null
           data_solicitacao: string | null
           debito_condominio_assoc: number | null
           debito_iptu: number | null
@@ -5051,6 +5129,7 @@ export type Database = {
           aprovacao_distrato_inicial_por?: string | null
           aprovacao_minutas_finais_por?: string | null
           atualiza_estoque_legal?: boolean | null
+          criado_por_id?: number | null
           data_solicitacao?: string | null
           debito_condominio_assoc?: number | null
           debito_iptu?: number | null
@@ -5077,6 +5156,7 @@ export type Database = {
           aprovacao_distrato_inicial_por?: string | null
           aprovacao_minutas_finais_por?: string | null
           atualiza_estoque_legal?: boolean | null
+          criado_por_id?: number | null
           data_solicitacao?: string | null
           debito_condominio_assoc?: number | null
           debito_iptu?: number | null
@@ -5098,7 +5178,15 @@ export type Database = {
           numero_lote?: string | null
           status?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "posvenda_distrato_registrado_criado_por_id_fkey"
+            columns: ["criado_por_id"]
+            isOneToOne: false
+            referencedRelation: "posvenda_user"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       posvenda_leilao: {
         Row: {
@@ -5255,12 +5343,16 @@ export type Database = {
       }
       posvenda_notificacao_processo: {
         Row: {
+          aprovacao_direcao_etapa1: string | null
+          aprovacao_direcao_etapa2: string | null
           aprovacao_etapa1: string | null
           aprovacao_etapa2: string | null
           ar_assinado_url: string | null
+          boletos_baixados: string | null
           cancelado_sienge: string | null
           cliente: string | null
           contrato_url: string | null
+          criado_por_id: number | null
           empreendimento: string | null
           envio_correio_info: string | null
           envio_email_url: string | null
@@ -5277,14 +5369,19 @@ export type Database = {
           relatorio_recebidas_url: string | null
           retorno_no_prazo: string | null
           status: string | null
+          status_manual: boolean | null
         }
         Insert: {
+          aprovacao_direcao_etapa1?: string | null
+          aprovacao_direcao_etapa2?: string | null
           aprovacao_etapa1?: string | null
           aprovacao_etapa2?: string | null
           ar_assinado_url?: string | null
+          boletos_baixados?: string | null
           cancelado_sienge?: string | null
           cliente?: string | null
           contrato_url?: string | null
+          criado_por_id?: number | null
           empreendimento?: string | null
           envio_correio_info?: string | null
           envio_email_url?: string | null
@@ -5301,14 +5398,19 @@ export type Database = {
           relatorio_recebidas_url?: string | null
           retorno_no_prazo?: string | null
           status?: string | null
+          status_manual?: boolean | null
         }
         Update: {
+          aprovacao_direcao_etapa1?: string | null
+          aprovacao_direcao_etapa2?: string | null
           aprovacao_etapa1?: string | null
           aprovacao_etapa2?: string | null
           ar_assinado_url?: string | null
+          boletos_baixados?: string | null
           cancelado_sienge?: string | null
           cliente?: string | null
           contrato_url?: string | null
+          criado_por_id?: number | null
           empreendimento?: string | null
           envio_correio_info?: string | null
           envio_email_url?: string | null
@@ -5325,8 +5427,17 @@ export type Database = {
           relatorio_recebidas_url?: string | null
           retorno_no_prazo?: string | null
           status?: string | null
+          status_manual?: boolean | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "posvenda_notificacao_processo_criado_por_id_fkey"
+            columns: ["criado_por_id"]
+            isOneToOne: false
+            referencedRelation: "posvenda_user"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       posvenda_renegociacao: {
         Row: {
@@ -5335,6 +5446,7 @@ export type Database = {
           aprovacao_calculo: string | null
           aprovacao_cliente: string | null
           aprovacao_interna: string | null
+          criado_por_id: number | null
           data_aprovacao_rejeicao: string | null
           data_atualizacao_gatilho: string | null
           data_envio_cliente: string | null
@@ -5363,6 +5475,7 @@ export type Database = {
           aprovacao_calculo?: string | null
           aprovacao_cliente?: string | null
           aprovacao_interna?: string | null
+          criado_por_id?: number | null
           data_aprovacao_rejeicao?: string | null
           data_atualizacao_gatilho?: string | null
           data_envio_cliente?: string | null
@@ -5391,6 +5504,7 @@ export type Database = {
           aprovacao_calculo?: string | null
           aprovacao_cliente?: string | null
           aprovacao_interna?: string | null
+          criado_por_id?: number | null
           data_aprovacao_rejeicao?: string | null
           data_atualizacao_gatilho?: string | null
           data_envio_cliente?: string | null
@@ -5413,11 +5527,20 @@ export type Database = {
           revisao?: string | null
           status?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "posvenda_renegociacao_criado_por_id_fkey"
+            columns: ["criado_por_id"]
+            isOneToOne: false
+            referencedRelation: "posvenda_user"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       posvenda_titularidade_nao_registrado: {
         Row: {
           aprovacao_minutas: string | null
+          criado_por_id: number | null
           data_solicitacao: string | null
           desistencia: boolean | null
           empreendimento: string | null
@@ -5441,6 +5564,7 @@ export type Database = {
         }
         Insert: {
           aprovacao_minutas?: string | null
+          criado_por_id?: number | null
           data_solicitacao?: string | null
           desistencia?: boolean | null
           empreendimento?: string | null
@@ -5464,6 +5588,7 @@ export type Database = {
         }
         Update: {
           aprovacao_minutas?: string | null
+          criado_por_id?: number | null
           data_solicitacao?: string | null
           desistencia?: boolean | null
           empreendimento?: string | null
@@ -5485,12 +5610,21 @@ export type Database = {
           numero_lote?: string | null
           status?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "posvenda_titularidade_nao_registrado_criado_por_id_fkey"
+            columns: ["criado_por_id"]
+            isOneToOne: false
+            referencedRelation: "posvenda_user"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       posvenda_titularidade_nao_registrado_quitado: {
         Row: {
           aprovacao_minutas: string | null
           atualiza_estoque_legal: boolean | null
+          criado_por_id: number | null
           data_solicitacao: string | null
           desistencia: boolean | null
           empreendimento: string | null
@@ -5515,6 +5649,7 @@ export type Database = {
         Insert: {
           aprovacao_minutas?: string | null
           atualiza_estoque_legal?: boolean | null
+          criado_por_id?: number | null
           data_solicitacao?: string | null
           desistencia?: boolean | null
           empreendimento?: string | null
@@ -5539,6 +5674,7 @@ export type Database = {
         Update: {
           aprovacao_minutas?: string | null
           atualiza_estoque_legal?: boolean | null
+          criado_por_id?: number | null
           data_solicitacao?: string | null
           desistencia?: boolean | null
           empreendimento?: string | null
@@ -5560,12 +5696,21 @@ export type Database = {
           numero_lote?: string | null
           status?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "posvenda_titularidade_nao_registrado_quitado_criado_por_id_fkey"
+            columns: ["criado_por_id"]
+            isOneToOne: false
+            referencedRelation: "posvenda_user"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       posvenda_titularidade_registrado: {
         Row: {
           aprovacao_minutas: string | null
           atualiza_estoque_legal: boolean | null
+          criado_por_id: number | null
           data_solicitacao: string | null
           desistencia: boolean | null
           empreendimento: string | null
@@ -5589,6 +5734,7 @@ export type Database = {
         Insert: {
           aprovacao_minutas?: string | null
           atualiza_estoque_legal?: boolean | null
+          criado_por_id?: number | null
           data_solicitacao?: string | null
           desistencia?: boolean | null
           empreendimento?: string | null
@@ -5612,6 +5758,7 @@ export type Database = {
         Update: {
           aprovacao_minutas?: string | null
           atualiza_estoque_legal?: boolean | null
+          criado_por_id?: number | null
           data_solicitacao?: string | null
           desistencia?: boolean | null
           empreendimento?: string | null
@@ -5632,7 +5779,15 @@ export type Database = {
           numero_lote?: string | null
           status?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "posvenda_titularidade_registrado_criado_por_id_fkey"
+            columns: ["criado_por_id"]
+            isOneToOne: false
+            referencedRelation: "posvenda_user"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       posvenda_troca_lote_nao_registrado: {
         Row: {
@@ -5640,6 +5795,7 @@ export type Database = {
           atualiza_estoque_legal: boolean | null
           avisar_comercial: boolean | null
           coletar_assinaturas: boolean | null
+          criado_por_id: number | null
           data_solicitacao: string | null
           desistencia: boolean | null
           empreendimento: string | null
@@ -5667,6 +5823,7 @@ export type Database = {
           atualiza_estoque_legal?: boolean | null
           avisar_comercial?: boolean | null
           coletar_assinaturas?: boolean | null
+          criado_por_id?: number | null
           data_solicitacao?: string | null
           desistencia?: boolean | null
           empreendimento?: string | null
@@ -5694,6 +5851,7 @@ export type Database = {
           atualiza_estoque_legal?: boolean | null
           avisar_comercial?: boolean | null
           coletar_assinaturas?: boolean | null
+          criado_por_id?: number | null
           data_solicitacao?: string | null
           desistencia?: boolean | null
           empreendimento?: string | null
@@ -5716,7 +5874,15 @@ export type Database = {
           valores_a_descontar?: number | null
           valores_ja_pagos_contrato_original?: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "posvenda_troca_lote_nao_registrado_criado_por_id_fkey"
+            columns: ["criado_por_id"]
+            isOneToOne: false
+            referencedRelation: "posvenda_user"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       posvenda_troca_lote_registrado: {
         Row: {
@@ -5726,6 +5892,7 @@ export type Database = {
           atualiza_estoque_legal: boolean | null
           avisar_comercial: boolean | null
           confirmar_novo_lote_condicoes: boolean | null
+          criado_por_id: number | null
           data_solicitacao: string | null
           desistencia: boolean | null
           empreendimento: string | null
@@ -5758,6 +5925,7 @@ export type Database = {
           atualiza_estoque_legal?: boolean | null
           avisar_comercial?: boolean | null
           confirmar_novo_lote_condicoes?: boolean | null
+          criado_por_id?: number | null
           data_solicitacao?: string | null
           desistencia?: boolean | null
           empreendimento?: string | null
@@ -5790,6 +5958,7 @@ export type Database = {
           atualiza_estoque_legal?: boolean | null
           avisar_comercial?: boolean | null
           confirmar_novo_lote_condicoes?: boolean | null
+          criado_por_id?: number | null
           data_solicitacao?: string | null
           desistencia?: boolean | null
           empreendimento?: string | null
@@ -5815,12 +5984,21 @@ export type Database = {
           valores_a_descontar?: number | null
           valores_ja_pagos_contrato_original?: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "posvenda_troca_lote_registrado_criado_por_id_fkey"
+            columns: ["criado_por_id"]
+            isOneToOne: false
+            referencedRelation: "posvenda_user"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       posvenda_user: {
         Row: {
           ativo: boolean | null
           created_at: string | null
+          email: string | null
           id: number
           is_admin: boolean | null
           nome: string | null
@@ -5832,6 +6010,7 @@ export type Database = {
         Insert: {
           ativo?: boolean | null
           created_at?: string | null
+          email?: string | null
           id?: number
           is_admin?: boolean | null
           nome?: string | null
@@ -5843,6 +6022,7 @@ export type Database = {
         Update: {
           ativo?: boolean | null
           created_at?: string | null
+          email?: string | null
           id?: number
           is_admin?: boolean | null
           nome?: string | null
