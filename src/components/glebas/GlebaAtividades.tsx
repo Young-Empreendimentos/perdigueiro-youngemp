@@ -240,7 +240,7 @@ export function GlebaAtividades({ glebaId }: GlebaAtividadesProps) {
               value={novaAtividade}
               onChange={(e) => setNovaAtividade(e.target.value)}
               onKeyDown={handleKeyDown}
-              className={`${expandido ? "min-h-[300px]" : "min-h-[60px]"} resize-none pr-9 transition-[min-height]`}
+              className={`${expandido ? "min-h-[60vh]" : "min-h-[60px]"} resize-none pr-9 transition-[min-height]`}
               disabled={isSubmitting}
             />
             <Button
