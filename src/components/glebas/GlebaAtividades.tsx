@@ -35,6 +35,7 @@ interface Atividade {
 export function GlebaAtividades({ glebaId }: GlebaAtividadesProps) {
   const [novaAtividade, setNovaAtividade] = useState("");
   const [tipoAtividadeId, setTipoAtividadeId] = useState<string | null>(null);
+  const [expandido, setExpandido] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const queryClient = useQueryClient();
   const { user, isAdmin } = useAuth();
