@@ -3952,6 +3952,7 @@ export type Database = {
       }
       imobiliarias: {
         Row: {
+          ativo: boolean
           contato_nome: string | null
           created_at: string
           id: string
@@ -3961,6 +3962,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          ativo?: boolean
           contato_nome?: string | null
           created_at?: string
           id?: string
@@ -3970,6 +3972,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          ativo?: boolean
           contato_nome?: string | null
           created_at?: string
           id?: string
@@ -5204,6 +5207,7 @@ export type Database = {
           contas_a_receber_url: string | null
           contas_recebidas_url: string | null
           contrato_url: string | null
+          criado_por_id: number | null
           custo_consolidacao_ri: number | null
           custo_intimacao_edital: number | null
           custo_intimacao_ri: number | null
@@ -5254,6 +5258,7 @@ export type Database = {
           contas_a_receber_url?: string | null
           contas_recebidas_url?: string | null
           contrato_url?: string | null
+          criado_por_id?: number | null
           custo_consolidacao_ri?: number | null
           custo_intimacao_edital?: number | null
           custo_intimacao_ri?: number | null
@@ -5304,6 +5309,7 @@ export type Database = {
           contas_a_receber_url?: string | null
           contas_recebidas_url?: string | null
           contrato_url?: string | null
+          criado_por_id?: number | null
           custo_consolidacao_ri?: number | null
           custo_intimacao_edital?: number | null
           custo_intimacao_ri?: number | null
@@ -5339,7 +5345,15 @@ export type Database = {
           valor_terreno_corrigido?: number | null
           valor_terreno_original?: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "posvenda_leilao_criado_por_id_fkey"
+            columns: ["criado_por_id"]
+            isOneToOne: false
+            referencedRelation: "posvenda_user"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       posvenda_notificacao_processo: {
         Row: {
@@ -7874,19 +7888,31 @@ export type Database = {
       }
       sienge_unidades: {
         Row: {
+          commercial_stock: string | null
+          contract_id: number | null
+          enterprise_id: number | null
           id: number
           name: string | null
           synced_at: string | null
+          terrain_value: number | null
         }
         Insert: {
+          commercial_stock?: string | null
+          contract_id?: number | null
+          enterprise_id?: number | null
           id: number
           name?: string | null
           synced_at?: string | null
+          terrain_value?: number | null
         }
         Update: {
+          commercial_stock?: string | null
+          contract_id?: number | null
+          enterprise_id?: number | null
           id?: number
           name?: string | null
           synced_at?: string | null
+          terrain_value?: number | null
         }
         Relationships: []
       }
