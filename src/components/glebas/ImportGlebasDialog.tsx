@@ -265,7 +265,7 @@ export function ImportGlebasDialog() {
     try {
       const { data, error } = await supabase
         .from("imobiliarias")
-        .insert({ nome: normalizedName })
+        .insert({ nome: normalizedName, ativo_nn: true, ativo_crm: false, ativo: true })
         .select("id")
         .single();
       
