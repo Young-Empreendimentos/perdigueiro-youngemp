@@ -81,6 +81,8 @@ export function GlebaTable({ onViewGleba }: GlebaTableProps) {
       const { data, error } = await supabase
         .from("imobiliarias")
         .select("id, nome")
+        .eq("ativo_nn", true)
+        .eq("ativo", true)
         .order("nome", { ascending: true });
       if (error) throw error;
       return data;

@@ -14,6 +14,8 @@ export function useImobiliarias() {
       const { data, error } = await supabase
         .from("imobiliarias")
         .select("*")
+        .eq("ativo_nn", true)
+        .eq("ativo", true)
         .order("nome");
 
       if (error) throw error;
@@ -43,7 +45,7 @@ export function useImobiliarias() {
 
   const createImobiliaria = useMutation({
     mutationFn: async (data: ImobiliariaInsert) => {
-      const { error } = await supabase.from("imobiliarias").insert([data]);
+      const { error } = await supabase.from("imobiliarias").insert([{ ...data, ativo_nn: true, ativo_crm: false, ativo: true }]);
       if (error) throw error;
     },
     onSuccess: () => {
