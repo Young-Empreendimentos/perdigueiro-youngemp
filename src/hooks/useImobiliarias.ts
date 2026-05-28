@@ -14,6 +14,8 @@ export function useImobiliarias() {
       const { data, error } = await supabase
         .from("imobiliarias")
         .select("*")
+        .eq("ativo_nn", true)
+        .eq("ativo", true)
         .order("nome");
 
       if (error) throw error;
