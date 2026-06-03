@@ -11,10 +11,9 @@ export function useImobiliarias() {
   const { data: imobiliarias = [], isLoading } = useQuery({
     queryKey: ["imobiliarias"],
     queryFn: async () => {
-      const { data, error } = await (supabase
-        .from("imobiliarias") as any)
+      const { data, error } = await supabase
+        .from("imobiliarias")
         .select("*")
-        .eq("ativo_nn", true)
         .eq("ativo", true)
         .order("nome");
 
