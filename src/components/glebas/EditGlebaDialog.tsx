@@ -95,8 +95,8 @@ export function EditGlebaDialog({ gleba, open, onOpenChange }: EditGlebaDialogPr
   const { data: imobiliarias = [] } = useQuery({
     queryKey: ["imobiliarias"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("imobiliarias")
+      const { data, error } = await (supabase
+        .from("imobiliarias") as any)
         .select("*")
         .eq("ativo_nn", true)
         .eq("ativo", true)
