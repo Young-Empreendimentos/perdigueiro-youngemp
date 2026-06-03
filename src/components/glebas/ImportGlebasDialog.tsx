@@ -263,9 +263,9 @@ export function ImportGlebasDialog() {
     
     // Create new imobiliaria
     try {
-      const { data, error } = await (supabase
-        .from("imobiliarias") as any)
-        .insert({ nome: normalizedName, ativo_nn: true, ativo_crm: false, ativo: true })
+      const { data, error } = await supabase
+        .from("imobiliarias")
+        .insert({ nome: normalizedName, ativo: true })
         .select("id")
         .single();
       
