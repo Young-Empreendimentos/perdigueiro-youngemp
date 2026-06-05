@@ -310,6 +310,46 @@ Deno.serve(async (req) => {
     const url = new URL(req.url);
     const layer = url.searchParams.get("layer") || "glebas";
     const appUrl = url.searchParams.get("app_url") || "https://id-preview--0050eb8f-48d2-48db-a3d1-51a30000b8b0.lovable.app";
+    const raw = url.searchParams.get("raw") === "1";
+
+    // Default: return a NetworkLink wrapper that forces auto-refresh every 60s.
+    // The wrapper points to the same endpoint with ?raw=1 for the actual KML data.
+    if (!raw) {
+      const dataUrl = new URL(req.url);
+      dataUrl.searchParams.set("raw", "1");
+      const linkName = layer === "pesquisa"
+        ? "Pesquisa de Mercado - Young Empreendimentos"
+        : layer === "all"
+        ? "Perdigueiro - Young Empreendimentos"
+        : "Glebas - Young Empreendimentos";
+      const wrapperKml = `<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+  <Document>
+    <name>${escapeXml(linkName)}</name>
+    <open>1</open>
+    <NetworkLink>
+      <name>${escapeXml(linkName)}</name>
+      <open>1</open>
+      <refreshVisibility>0</refreshVisibility>
+      <flyToView>0</flyToView>
+      <Link>
+        <href>${escapeXml(dataUrl.toString())}</href>
+        <refreshMode>onInterval</refreshMode>
+        <refreshInterval>60</refreshInterval>
+        <viewRefreshMode>never</viewRefreshMode>
+      </Link>
+    </NetworkLink>
+  </Document>
+</kml>`;
+      return new Response(wrapperKml, {
+        headers: {
+          ...corsHeaders,
+          "Content-Type": "application/vnd.google-earth.kml+xml",
+          "Content-Disposition": 'inline; filename="perdigueiro.kml"',
+          "Cache-Control": "no-cache, no-store, must-revalidate",
+        },
+      });
+    }
 
     let kml = "";
 
