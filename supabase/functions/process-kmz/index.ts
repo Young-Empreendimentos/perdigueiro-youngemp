@@ -370,31 +370,34 @@ serve(async (req) => {
       );
     }
 
-    // Validate it's a ZIP file (KMZ starts with PK)
-    if (kmzBytes[0] !== 0x50 || kmzBytes[1] !== 0x4B) {
-      console.error("File does not start with PK signature. First bytes:", kmzBytes.slice(0, 20));
-      throw new Error("Downloaded file is not a valid KMZ/ZIP file.");
-    }
-
-    console.log("KMZ file validated, extracting...");
-
-    // Unzip the KMZ to get KML
-    const zip = new JSZip();
-    const zipContent = await zip.loadAsync(kmzBytes);
-    
-    // Find the KML file inside the KMZ
+    // Detect file type: KMZ (zipped, starts with PK) or KML (plain XML)
+    const isKmz = kmzBytes[0] === 0x50 && kmzBytes[1] === 0x4B;
     let kmlContent: string | null = null;
-    for (const filename of Object.keys(zipContent.files)) {
-      console.log(`Found file in KMZ: ${filename}`);
-      if (filename.endsWith(".kml")) {
-        kmlContent = await zipContent.files[filename].async("string");
-        console.log(`KML content length: ${kmlContent.length}`);
-        break;
-      }
-    }
 
-    if (!kmlContent) {
-      throw new Error("No KML file found inside KMZ");
+    if (isKmz) {
+      console.log("KMZ file detected, extracting...");
+      const zip = new JSZip();
+      const zipContent = await zip.loadAsync(kmzBytes);
+      for (const filename of Object.keys(zipContent.files)) {
+        console.log(`Found file in KMZ: ${filename}`);
+        if (filename.endsWith(".kml")) {
+          kmlContent = await zipContent.files[filename].async("string");
+          console.log(`KML content length: ${kmlContent.length}`);
+          break;
+        }
+      }
+      if (!kmlContent) {
+        throw new Error("No KML file found inside KMZ");
+      }
+    } else {
+      // Try parsing as plain KML (XML text)
+      const asText = new TextDecoder("utf-8").decode(kmzBytes);
+      if (!asText.includes("<kml") && !asText.includes("<KML")) {
+        console.error("File is neither KMZ nor KML. First bytes:", kmzBytes.slice(0, 20));
+        throw new Error("Arquivo inválido: não é KMZ nem KML.");
+      }
+      kmlContent = asText;
+      console.log(`Plain KML detected, length: ${kmlContent.length}`);
     }
 
     // Parse KML to extract coordinates using simple regex parser
@@ -415,12 +418,12 @@ serve(async (req) => {
       .replace(/-+/g, "-")
       .substring(0, 50);
     
-    const fileName = `${sanitizedApelido}-${Date.now()}.kmz`;
+    const fileName = `${sanitizedApelido}-${Date.now()}.${isKmz ? "kmz" : "kml"}`;
     
     const { error: uploadError } = await supabase.storage
       .from("glebas-kmz")
       .upload(fileName, kmzBytes, {
-        contentType: "application/vnd.google-earth.kmz",
+        contentType: isKmz ? "application/vnd.google-earth.kmz" : "application/vnd.google-earth.kml+xml",
         upsert: false,
       });
 
