@@ -418,12 +418,12 @@ serve(async (req) => {
       .replace(/-+/g, "-")
       .substring(0, 50);
     
-    const fileName = `${sanitizedApelido}-${Date.now()}.kmz`;
+    const fileName = `${sanitizedApelido}-${Date.now()}.${isKmz ? "kmz" : "kml"}`;
     
     const { error: uploadError } = await supabase.storage
       .from("glebas-kmz")
       .upload(fileName, kmzBytes, {
-        contentType: "application/vnd.google-earth.kmz",
+        contentType: isKmz ? "application/vnd.google-earth.kmz" : "application/vnd.google-earth.kml+xml",
         upsert: false,
       });
 
