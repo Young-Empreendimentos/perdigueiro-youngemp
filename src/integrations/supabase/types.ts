@@ -2725,6 +2725,8 @@ export type Database = {
           consultor_id: string | null
           created_at: string
           data_nascimento: string | null
+          data_perdido: string | null
+          data_vendido: string | null
           empreendimento_id: string | null
           escolaridade: string | null
           estado_civil: string | null
@@ -2749,7 +2751,6 @@ export type Database = {
           renda_familiar: string | null
           responsavel_id: string | null
           responsavel_venda_corretor_id: string | null
-          responsavel_venda_imobiliaria_id: string | null
           responsavel_venda_original: string | null
           responsavel_venda_user_id: string | null
           satisfacao_atendimento: number | null
@@ -2774,6 +2775,8 @@ export type Database = {
           consultor_id?: string | null
           created_at?: string
           data_nascimento?: string | null
+          data_perdido?: string | null
+          data_vendido?: string | null
           empreendimento_id?: string | null
           escolaridade?: string | null
           estado_civil?: string | null
@@ -2798,7 +2801,6 @@ export type Database = {
           renda_familiar?: string | null
           responsavel_id?: string | null
           responsavel_venda_corretor_id?: string | null
-          responsavel_venda_imobiliaria_id?: string | null
           responsavel_venda_original?: string | null
           responsavel_venda_user_id?: string | null
           satisfacao_atendimento?: number | null
@@ -2823,6 +2825,8 @@ export type Database = {
           consultor_id?: string | null
           created_at?: string
           data_nascimento?: string | null
+          data_perdido?: string | null
+          data_vendido?: string | null
           empreendimento_id?: string | null
           escolaridade?: string | null
           estado_civil?: string | null
@@ -2847,7 +2851,6 @@ export type Database = {
           renda_familiar?: string | null
           responsavel_id?: string | null
           responsavel_venda_corretor_id?: string | null
-          responsavel_venda_imobiliaria_id?: string | null
           responsavel_venda_original?: string | null
           responsavel_venda_user_id?: string | null
           satisfacao_atendimento?: number | null
@@ -2896,13 +2899,6 @@ export type Database = {
             columns: ["responsavel_venda_corretor_id"]
             isOneToOne: false
             referencedRelation: "comercial_corretores"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "crm_deals_responsavel_venda_imobiliaria_fkey"
-            columns: ["responsavel_venda_imobiliaria_id"]
-            isOneToOne: false
-            referencedRelation: "imobiliarias"
             referencedColumns: ["id"]
           },
         ]
@@ -3099,7 +3095,9 @@ export type Database = {
           created_at: string
           data_vencimento: string | null
           deal_id: string
+          deleted_at: string | null
           descricao: string | null
+          hora_vencimento: string | null
           id: string
           responsavel_id: string
           tipo: string | null
@@ -3111,7 +3109,9 @@ export type Database = {
           created_at?: string
           data_vencimento?: string | null
           deal_id: string
+          deleted_at?: string | null
           descricao?: string | null
+          hora_vencimento?: string | null
           id?: string
           responsavel_id: string
           tipo?: string | null
@@ -3123,7 +3123,9 @@ export type Database = {
           created_at?: string
           data_vencimento?: string | null
           deal_id?: string
+          deleted_at?: string | null
           descricao?: string | null
+          hora_vencimento?: string | null
           id?: string
           responsavel_id?: string
           tipo?: string | null
