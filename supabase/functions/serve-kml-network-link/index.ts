@@ -357,18 +357,19 @@ Deno.serve(async (req) => {
       const { data: glebas, error } = await supabase
         .from("glebas")
         .select("id, numero, apelido, status, tamanho_m2, preco, proprietario_nome, poligono_geojson, prioridade, aceita_permuta, comentarios, cidade:cidades(nome)")
-        .not("poligono_geojson", "is", null);
+        .not("poligono_geojson", "is", null)
+        .range(0, 99999);
       if (error) throw error;
 
       if (layer === "glebas") {
         kml = buildGlebasKml(glebas || [], appUrl);
       } else {
-        // layer === "all", fetch pesquisa too
         const { data: terrenos, error: err2 } = await supabase
           .from("pesquisa_mercado_terrenos")
           .select("*, pesquisa:pesquisas_mercado(nome, data_pesquisa, cidade:cidades(nome))")
           .not("latitude", "is", null)
-          .not("longitude", "is", null);
+          .not("longitude", "is", null)
+          .range(0, 99999);
         if (err2) throw err2;
         kml = buildAllKml(glebas || [], terrenos || [], appUrl);
       }
@@ -377,7 +378,8 @@ Deno.serve(async (req) => {
         .from("pesquisa_mercado_terrenos")
         .select("*, pesquisa:pesquisas_mercado(nome, data_pesquisa, cidade:cidades(nome))")
         .not("latitude", "is", null)
-        .not("longitude", "is", null);
+        .not("longitude", "is", null)
+        .range(0, 99999);
       if (error) throw error;
       kml = buildPesquisaKml(terrenos || []);
     } else {
