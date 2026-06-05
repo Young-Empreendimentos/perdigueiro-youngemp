@@ -315,7 +315,11 @@ Deno.serve(async (req) => {
     // Default: return a NetworkLink wrapper that forces auto-refresh every 60s.
     // The wrapper points to the same endpoint with ?raw=1 for the actual KML data.
     if (!raw) {
-      const dataUrl = new URL(req.url);
+      // Build the canonical public URL for this function (req.url inside edge runtime
+      // strips the /functions/v1/ prefix and may report http), so reconstruct from SUPABASE_URL.
+      const publicBase = `${supabaseUrl.replace(/\/$/, "")}/functions/v1/serve-kml-network-link`;
+      const dataUrl = new URL(publicBase);
+      for (const [k, v] of url.searchParams) dataUrl.searchParams.set(k, v);
       dataUrl.searchParams.set("raw", "1");
       const linkName = layer === "pesquisa"
         ? "Pesquisa de Mercado - Young Empreendimentos"
