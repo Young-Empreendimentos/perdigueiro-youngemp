@@ -2714,6 +2714,44 @@ export type Database = {
           },
         ]
       }
+      crm_deal_status_log: {
+        Row: {
+          created_at: string
+          deal_id: string
+          empreendimento_id: string | null
+          id: string
+          responsavel_id: string | null
+          status_anterior: string | null
+          status_novo: string
+        }
+        Insert: {
+          created_at?: string
+          deal_id: string
+          empreendimento_id?: string | null
+          id?: string
+          responsavel_id?: string | null
+          status_anterior?: string | null
+          status_novo: string
+        }
+        Update: {
+          created_at?: string
+          deal_id?: string
+          empreendimento_id?: string | null
+          id?: string
+          responsavel_id?: string | null
+          status_anterior?: string | null
+          status_novo?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_deal_status_log_deal_id_fkey"
+            columns: ["deal_id"]
+            isOneToOne: false
+            referencedRelation: "crm_deals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       crm_deals: {
         Row: {
           auto_interesse: string | null
@@ -2998,6 +3036,105 @@ export type Database = {
         }
         Relationships: []
       }
+      crm_formulario_historico_dados: {
+        Row: {
+          "Carimbo de data/hora": string | null
+          "De 0 a 10_1, qual a probabilidade de você indicar o Empreendim":
+            | number
+            | null
+          "De 0 a 10, qual a probabilidade de você indicar a YOUNG a um a":
+            | number
+            | null
+          "Em qual empreendimento você adquiriu seu terreno?": string | null
+          Email: string | null
+          "Há quanto tempo mora no seu endereço atual?": string | null
+          "Marque seus principais interesses": string | null
+          Mídiamotivadoradaaquisição: string | null
+          Nacionalidade: string | null
+          Profissão: string | null
+          "Qual a cidade onde reside?": string | null
+          "Qual faixa melhor se aproxima da sua renda familiar mensal?":
+            | string
+            | null
+          "Qual o motivo principal da compra?": string | null
+          "Qual o seu endereço atual?": string | null
+          "Qual o seu estado civil?": string | null
+          "Qual o seu nível de escolaridade?": string | null
+          "Qual o seu nome completo?": string | null
+          "Qual o seu tipo de residência?": string | null
+          "Qual sua data de nascimento?": string | null
+          "Quantos lotes você adquiriu?": string | null
+          Sexo: string | null
+          "Sugestões, elogios ou reclamações": string | null
+          Telefone: string | null
+          "Você possui filhos? Quantos?": string | null
+        }
+        Insert: {
+          "Carimbo de data/hora"?: string | null
+          "De 0 a 10_1, qual a probabilidade de você indicar o Empreendim"?:
+            | number
+            | null
+          "De 0 a 10, qual a probabilidade de você indicar a YOUNG a um a"?:
+            | number
+            | null
+          "Em qual empreendimento você adquiriu seu terreno?"?: string | null
+          Email?: string | null
+          "Há quanto tempo mora no seu endereço atual?"?: string | null
+          "Marque seus principais interesses"?: string | null
+          Mídiamotivadoradaaquisição?: string | null
+          Nacionalidade?: string | null
+          Profissão?: string | null
+          "Qual a cidade onde reside?"?: string | null
+          "Qual faixa melhor se aproxima da sua renda familiar mensal?"?:
+            | string
+            | null
+          "Qual o motivo principal da compra?"?: string | null
+          "Qual o seu endereço atual?"?: string | null
+          "Qual o seu estado civil?"?: string | null
+          "Qual o seu nível de escolaridade?"?: string | null
+          "Qual o seu nome completo?"?: string | null
+          "Qual o seu tipo de residência?"?: string | null
+          "Qual sua data de nascimento?"?: string | null
+          "Quantos lotes você adquiriu?"?: string | null
+          Sexo?: string | null
+          "Sugestões, elogios ou reclamações"?: string | null
+          Telefone?: string | null
+          "Você possui filhos? Quantos?"?: string | null
+        }
+        Update: {
+          "Carimbo de data/hora"?: string | null
+          "De 0 a 10_1, qual a probabilidade de você indicar o Empreendim"?:
+            | number
+            | null
+          "De 0 a 10, qual a probabilidade de você indicar a YOUNG a um a"?:
+            | number
+            | null
+          "Em qual empreendimento você adquiriu seu terreno?"?: string | null
+          Email?: string | null
+          "Há quanto tempo mora no seu endereço atual?"?: string | null
+          "Marque seus principais interesses"?: string | null
+          Mídiamotivadoradaaquisição?: string | null
+          Nacionalidade?: string | null
+          Profissão?: string | null
+          "Qual a cidade onde reside?"?: string | null
+          "Qual faixa melhor se aproxima da sua renda familiar mensal?"?:
+            | string
+            | null
+          "Qual o motivo principal da compra?"?: string | null
+          "Qual o seu endereço atual?"?: string | null
+          "Qual o seu estado civil?"?: string | null
+          "Qual o seu nível de escolaridade?"?: string | null
+          "Qual o seu nome completo?"?: string | null
+          "Qual o seu tipo de residência?"?: string | null
+          "Qual sua data de nascimento?"?: string | null
+          "Quantos lotes você adquiriu?"?: string | null
+          Sexo?: string | null
+          "Sugestões, elogios ou reclamações"?: string | null
+          Telefone?: string | null
+          "Você possui filhos? Quantos?"?: string | null
+        }
+        Relationships: []
+      }
       crm_motivos_perda: {
         Row: {
           ativo: boolean
@@ -3092,6 +3229,7 @@ export type Database = {
       crm_tasks: {
         Row: {
           concluida: boolean
+          concluida_em: string | null
           created_at: string
           data_vencimento: string | null
           deal_id: string
@@ -3106,6 +3244,7 @@ export type Database = {
         }
         Insert: {
           concluida?: boolean
+          concluida_em?: string | null
           created_at?: string
           data_vencimento?: string | null
           deal_id: string
@@ -3120,6 +3259,7 @@ export type Database = {
         }
         Update: {
           concluida?: boolean
+          concluida_em?: string | null
           created_at?: string
           data_vencimento?: string | null
           deal_id?: string
@@ -9160,6 +9300,22 @@ export type Database = {
       }
     }
     Views: {
+      crm_relatorio_vendas_diario: {
+        Row: {
+          contatos_feitos: number | null
+          data: string | null
+          empreendimento_id: string | null
+          fichas_assinadas: number | null
+          leads_recebidos: number | null
+          negociacoes_criadas: number | null
+          perdas: number | null
+          responsavel_id: string | null
+          vendas: number | null
+          visitas_agendadas: number | null
+          visitas_realizadas: number | null
+        }
+        Relationships: []
+      }
       financeiro_mv_clientes_inadimplentes: {
         Row: {
           client_id: number | null
