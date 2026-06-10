@@ -1,0 +1,1 @@
+DROP POLICY IF EXISTS imobiliarias_admin_insert ON public.imobiliarias; CREATE POLICY imobiliarias_authenticated_insert ON public.imobiliarias FOR INSERT TO authenticated WITH CHECK (auth.uid() IS NOT NULL);
