@@ -79,7 +79,10 @@ export function usePropostas() {
         .update(data, { count: "exact" })
         .eq("id", id);
       if (error) throw error;
-      assertAfetou(count);
+      assertAfetou(
+        count,
+        "Não foi possível salvar: você só pode editar propostas que criou e há menos de 15 dias. Para alterar esta, peça a um administrador.",
+      );
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["propostas"] });
@@ -93,7 +96,10 @@ export function usePropostas() {
         .delete({ count: "exact" })
         .eq("id", id);
       if (error) throw error;
-      assertAfetou(count);
+      assertAfetou(
+        count,
+        "Você só pode excluir propostas que criou e há menos de 15 dias. Para remover esta, peça a um administrador.",
+      );
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["propostas"] });

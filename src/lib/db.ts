@@ -24,9 +24,13 @@ export class SemPermissaoError extends Error {
  * política de SELECT (em `user_roles`, por exemplo, o SELECT é restrito e
  * daria falso negativo), enquanto `count` reflete as linhas efetivamente
  * afetadas pela escrita.
+ *
+ * Passe `motivo` com a explicação certa para a operação (ex.: a regra de
+ * permissão daquela tabela), já que o PostgREST não diz por que bloqueou —
+ * quem conhece a regra de negócio é o chamador.
  */
-export function assertAfetou(count: number | null): void {
+export function assertAfetou(count: number | null, motivo?: string): void {
   if (!count) {
-    throw new SemPermissaoError();
+    throw new SemPermissaoError(motivo);
   }
 }

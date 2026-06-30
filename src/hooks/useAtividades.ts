@@ -46,7 +46,10 @@ export function useAtividades() {
         .update(data, { count: "exact" })
         .eq("id", id);
       if (error) throw error;
-      assertAfetou(count);
+      assertAfetou(
+        count,
+        "Não foi possível salvar: você só pode editar atividades que criou e há menos de 15 dias. Para alterar esta, peça a um administrador.",
+      );
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["atividades"] });
@@ -60,7 +63,10 @@ export function useAtividades() {
         .delete({ count: "exact" })
         .eq("id", id);
       if (error) throw error;
-      assertAfetou(count);
+      assertAfetou(
+        count,
+        "Você só pode excluir atividades que criou e há menos de 15 dias. Para remover esta, peça a um administrador.",
+      );
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["atividades"] });

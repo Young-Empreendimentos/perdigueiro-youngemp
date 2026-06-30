@@ -63,7 +63,10 @@ export function useImobiliarias() {
         .update(data, { count: "exact" })
         .eq("id", id);
       if (error) throw error;
-      assertAfetou(count);
+      assertAfetou(
+        count,
+        "Não foi possível salvar: esta imobiliária não foi encontrada. Ela pode ter sido removida — atualize a página e tente novamente.",
+      );
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["imobiliarias"] });
@@ -77,7 +80,7 @@ export function useImobiliarias() {
         .delete({ count: "exact" })
         .eq("id", id);
       if (error) throw error;
-      assertAfetou(count);
+      assertAfetou(count, "Apenas administradores podem excluir imobiliárias.");
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["imobiliarias"] });
