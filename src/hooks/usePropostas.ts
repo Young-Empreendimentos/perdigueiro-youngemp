@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Tables, TablesInsert } from "@/integrations/supabase/types";
+import { assertAfetou } from "@/lib/db";
 
 type Proposta = Tables<"propostas">;
 type PropostaInsert = TablesInsert<"propostas">;
@@ -60,8 +61,11 @@ export function usePropostas() {
 
   const createProposta = useMutation({
     mutationFn: async (data: PropostaInsert) => {
-      const { error } = await supabase.from("propostas").insert([data]);
+      const { error, count } = await supabase
+        .from("propostas")
+        .insert([data], { count: "exact" });
       if (error) throw error;
+      assertAfetou(count);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["propostas"] });
@@ -70,11 +74,15 @@ export function usePropostas() {
 
   const updateProposta = useMutation({
     mutationFn: async ({ id, ...data }: Partial<Proposta> & { id: string }) => {
-      const { error } = await supabase
+      const { error, count } = await supabase
         .from("propostas")
-        .update(data)
+        .update(data, { count: "exact" })
         .eq("id", id);
       if (error) throw error;
+      assertAfetou(
+        count,
+        "Não foi possível salvar: você só pode editar propostas que criou e há menos de 15 dias. Para alterar esta, peça a um administrador.",
+      );
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["propostas"] });
@@ -83,8 +91,15 @@ export function usePropostas() {
 
   const deleteProposta = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from("propostas").delete().eq("id", id);
+      const { error, count } = await supabase
+        .from("propostas")
+        .delete({ count: "exact" })
+        .eq("id", id);
       if (error) throw error;
+      assertAfetou(
+        count,
+        "Você só pode excluir propostas que criou e há menos de 15 dias. Para remover esta, peça a um administrador.",
+      );
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["propostas"] });

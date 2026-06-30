@@ -20,6 +20,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { useImobiliarias } from "@/hooks/useImobiliarias";
 import { Tables } from "@/integrations/supabase/types";
+import { SemPermissaoError } from "@/lib/db";
 import { toast } from "sonner";
 
 type Imobiliaria = Tables<"imobiliarias">;
@@ -82,7 +83,11 @@ export function EditImobiliariaDialog({
       onOpenChange(false);
     } catch (error) {
       console.error("Erro ao atualizar imobiliária:", error);
-      toast.error("Erro ao atualizar imobiliária");
+      toast.error(
+        error instanceof SemPermissaoError
+          ? error.message
+          : "Erro ao atualizar imobiliária",
+      );
     }
   };
 

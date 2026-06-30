@@ -26,6 +26,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { PropostaWithGleba, usePropostas } from "@/hooks/usePropostas";
 import { useAuth } from "@/contexts/AuthContext";
+import { SemPermissaoError } from "@/lib/db";
 import { toast } from "sonner";
 
 interface PropostaDetailsDialogProps {
@@ -114,7 +115,11 @@ export function PropostaDetailsDialog({ proposta, open, onOpenChange }: Proposta
       setIsEditing(false);
     } catch (error) {
       console.error("Error updating proposta:", error);
-      toast.error("Erro ao atualizar proposta");
+      toast.error(
+        error instanceof SemPermissaoError
+          ? error.message
+          : "Erro ao atualizar proposta",
+      );
     }
   };
 
@@ -164,8 +169,12 @@ export function PropostaDetailsDialog({ proposta, open, onOpenChange }: Proposta
                               await deleteProposta.mutateAsync(proposta!.id);
                               toast.success("Proposta excluída!");
                               onOpenChange(false);
-                            } catch {
-                              toast.error("Erro ao excluir proposta");
+                            } catch (error) {
+                              toast.error(
+                                error instanceof SemPermissaoError
+                                  ? error.message
+                                  : "Erro ao excluir proposta",
+                              );
                             }
                           }}
                           className="bg-destructive text-destructive-foreground hover:bg-destructive/90"

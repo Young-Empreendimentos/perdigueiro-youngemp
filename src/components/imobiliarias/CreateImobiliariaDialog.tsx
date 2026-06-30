@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { useImobiliarias } from "@/hooks/useImobiliarias";
+import { SemPermissaoError } from "@/lib/db";
 import { toast } from "sonner";
 
 const formSchema = z.object({
@@ -59,7 +60,11 @@ export function CreateImobiliariaDialog() {
       setOpen(false);
     } catch (error) {
       console.error("Erro ao criar imobiliária:", error);
-      toast.error("Erro ao cadastrar imobiliária");
+      toast.error(
+        error instanceof SemPermissaoError
+          ? error.message
+          : "Erro ao cadastrar imobiliária",
+      );
     }
   };
 
