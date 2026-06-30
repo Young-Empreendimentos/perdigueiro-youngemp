@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Tables, TablesInsert } from "@/integrations/supabase/types";
+import { assertAfetou } from "@/lib/db";
 
 type Imobiliaria = Tables<"imobiliarias">;
 type ImobiliariaInsert = TablesInsert<"imobiliarias">;
@@ -44,8 +45,11 @@ export function useImobiliarias() {
 
   const createImobiliaria = useMutation({
     mutationFn: async (data: ImobiliariaInsert) => {
-      const { error } = await supabase.from("imobiliarias").insert([{ ...data, ativo: true }]);
+      const { error, count } = await supabase
+        .from("imobiliarias")
+        .insert([{ ...data, ativo: true }], { count: "exact" });
       if (error) throw error;
+      assertAfetou(count);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["imobiliarias"] });
@@ -54,11 +58,12 @@ export function useImobiliarias() {
 
   const updateImobiliaria = useMutation({
     mutationFn: async ({ id, ...data }: Partial<Imobiliaria> & { id: string }) => {
-      const { error } = await supabase
+      const { error, count } = await supabase
         .from("imobiliarias")
-        .update(data)
+        .update(data, { count: "exact" })
         .eq("id", id);
       if (error) throw error;
+      assertAfetou(count);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["imobiliarias"] });
@@ -67,8 +72,12 @@ export function useImobiliarias() {
 
   const deleteImobiliaria = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from("imobiliarias").delete().eq("id", id);
+      const { error, count } = await supabase
+        .from("imobiliarias")
+        .delete({ count: "exact" })
+        .eq("id", id);
       if (error) throw error;
+      assertAfetou(count);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["imobiliarias"] });

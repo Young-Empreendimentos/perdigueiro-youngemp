@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Tables, TablesInsert } from "@/integrations/supabase/types";
+import { assertAfetou } from "@/lib/db";
 
 type Atividade = Tables<"atividades">;
 type AtividadeInsert = TablesInsert<"atividades">;
@@ -27,8 +28,11 @@ export function useAtividades() {
 
   const createAtividade = useMutation({
     mutationFn: async (data: AtividadeInsert) => {
-      const { error } = await supabase.from("atividades").insert([data]);
+      const { error, count } = await supabase
+        .from("atividades")
+        .insert([data], { count: "exact" });
       if (error) throw error;
+      assertAfetou(count);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["atividades"] });
@@ -37,11 +41,12 @@ export function useAtividades() {
 
   const updateAtividade = useMutation({
     mutationFn: async ({ id, ...data }: Partial<Atividade> & { id: string }) => {
-      const { error } = await supabase
+      const { error, count } = await supabase
         .from("atividades")
-        .update(data)
+        .update(data, { count: "exact" })
         .eq("id", id);
       if (error) throw error;
+      assertAfetou(count);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["atividades"] });
@@ -50,8 +55,12 @@ export function useAtividades() {
 
   const deleteAtividade = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from("atividades").delete().eq("id", id);
+      const { error, count } = await supabase
+        .from("atividades")
+        .delete({ count: "exact" })
+        .eq("id", id);
       if (error) throw error;
+      assertAfetou(count);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["atividades"] });
