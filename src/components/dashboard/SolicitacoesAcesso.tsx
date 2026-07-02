@@ -37,9 +37,14 @@ export function SolicitacoesAcesso() {
 
   const autorizar = useMutation({
     mutationFn: async (t: Tentativa) => {
+      // upsert: reativa quem já era membro (ex.: estava desativado) preservando o nível;
+      // ou cria novo (nível 'user' por padrão). Evita erro de chave duplicada.
       const { error } = await supabase
         .from("perdigueiro_membros" as any)
-        .insert({ user_id: t.user_id, nome: t.nome, email: t.email, nivel: "user" });
+        .upsert(
+          { user_id: t.user_id, nome: t.nome, email: t.email, ativo: true },
+          { onConflict: "user_id" }
+        );
       if (error) throw error;
       await supabase
         .from("perdigueiro_tentativas_acesso" as any)

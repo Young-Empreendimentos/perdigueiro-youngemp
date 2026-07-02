@@ -89,6 +89,7 @@ export default function Configuracoes() {
       const { data, error } = await supabase
         .from("perdigueiro_membros" as any)
         .select("id, user_id, nome, email, ativo, nivel, created_at")
+        .eq("ativo", true)
         .order("nome");
 
       if (error) {
@@ -121,9 +122,13 @@ export default function Configuracoes() {
   const addMember = useMutation({
     mutationFn: async (userId: string) => {
       const u = (portalUsers || []).find((x) => x.id === userId);
+      // upsert: se a pessoa já tem linha (ex.: estava desativada), reativa; senão, cria.
       const { error, count } = await supabase
         .from("perdigueiro_membros" as any)
-        .insert({ user_id: userId, nome: u?.nome ?? null, email: u?.email ?? null, nivel: newMemberNivel }, { count: "exact" });
+        .upsert(
+          { user_id: userId, nome: u?.nome ?? null, email: u?.email ?? null, nivel: newMemberNivel, ativo: true },
+          { onConflict: "user_id", count: "exact" }
+        );
 
       if (error) throw error;
       if (!count) throw new Error("Não foi possível adicionar (sem permissão de admin?).");
@@ -141,17 +146,18 @@ export default function Configuracoes() {
     },
   });
 
-  // Remove alguém da lista do Perdigueiro. NÃO apaga o login do portal —
-  // a pessoa perde acesso só a este sistema, continua nos demais.
+  // Remover da lista = DESATIVA (ativo=false), não apaga a linha. Preserva o histórico;
+  // a pessoa pode ser readicionada OU pedir acesso de volta (e ser reativada na aprovação).
+  // NÃO toca no login do portal — ela continua nos outros sistemas.
   const removeMember = useMutation({
     mutationFn: async (id: string) => {
       const { error, count } = await supabase
         .from("perdigueiro_membros" as any)
-        .delete({ count: "exact" })
+        .update({ ativo: false }, { count: "exact" })
         .eq("id", id);
 
       if (error) throw error;
-      if (!count) throw new Error("Nada foi removido (sem permissão de admin?).");
+      if (!count) throw new Error("Nada foi alterado (sem permissão de admin?).");
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["perdigueiro-membros"] });
