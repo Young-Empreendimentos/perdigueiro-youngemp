@@ -54,6 +54,8 @@ import { toast } from "sonner";
 import { ReportConfigCard } from "@/components/configuracoes/ReportConfigCard";
 import { useTiposArquivo } from "@/hooks/useTiposArquivo";
 
+// Usuário do portal (login compartilhado). Usado SOMENTE em leitura, para escolher
+// quem adicionar à lista do Perdigueiro. Esta tela nunca cria/edita/apaga esse cadastro.
 interface UserWithRole {
   id: string;
   email: string;
@@ -62,148 +64,106 @@ interface UserWithRole {
   nome: string;
 }
 
+// Membro do Perdigueiro — a fonte da verdade de quem acessa este sistema.
+interface Membro {
+  id: string;
+  user_id: string;
+  nome: string | null;
+  email: string | null;
+  ativo: boolean;
+  created_at: string;
+}
+
 export default function Configuracoes() {
   const { user: currentUser } = useAuth();
   const queryClient = useQueryClient();
-  const [createDialogOpen, setCreateDialogOpen] = useState(false);
-  const [newUserEmail, setNewUserEmail] = useState("");
-  const [newUserPassword, setNewUserPassword] = useState("");
-  const [newUserRole, setNewUserRole] = useState<"admin" | "user">("user");
-  const [isCreating, setIsCreating] = useState(false);
+  const [addDialogOpen, setAddDialogOpen] = useState(false);
+  const [selectedUserId, setSelectedUserId] = useState<string>("");
 
-  // Fetch all users with their roles (admin only via RPC function)
-  const { data: users, isLoading } = useQuery({
-    queryKey: ["admin-users"],
+  // Lista de membros do Perdigueiro (tabela nova, dedicada).
+  const { data: membros, isLoading } = useQuery({
+    queryKey: ["perdigueiro-membros"],
     queryFn: async () => {
-      const { data, error } = await supabase.rpc("get_all_users_with_roles" as any);
-      
+      const { data, error } = await supabase
+        .from("perdigueiro_membros" as any)
+        .select("id, user_id, nome, email, ativo, created_at")
+        .order("nome");
+
       if (error) {
-        console.error("Erro ao buscar usuários:", error);
+        console.error("Erro ao buscar membros:", error);
         throw error;
       }
-      
+
+      return (data || []) as unknown as Membro[];
+    },
+  });
+
+  // Usuários que já têm login no portal (somente leitura) — para o seletor de "adicionar".
+  // Não modificamos nada aqui; só lemos quem existe para poder pôr na lista do Perdigueiro.
+  const { data: portalUsers } = useQuery({
+    queryKey: ["portal-users"],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc("get_all_users_with_roles" as any);
+      if (error) {
+        console.error("Erro ao buscar usuários do portal:", error);
+        throw error;
+      }
       return (data || []) as UserWithRole[];
     },
   });
 
-  // Create new user mutation
-  const createUser = useMutation({
-    mutationFn: async ({ email, password, role }: { email: string; password: string; role: "admin" | "user" }) => {
-      const { data, error } = await supabase.functions.invoke("create-user", {
-        body: { email, password, role },
-      });
+  const membrosUserIds = new Set((membros || []).map((m) => m.user_id));
+  const candidatos = (portalUsers || []).filter((u) => !membrosUserIds.has(u.id));
 
-      if (error) throw error;
-      if (data?.error) throw new Error(data.error);
-      
-      return data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin-users"] });
-      toast.success("Usuário criado com sucesso!");
-      setCreateDialogOpen(false);
-      setNewUserEmail("");
-      setNewUserPassword("");
-      setNewUserRole("user");
-    },
-    onError: (error: any) => {
-      console.error("Erro ao criar usuário:", error);
-      toast.error(error.message || "Erro ao criar usuário");
-    },
-  });
-
-  // Update user role mutation
-  const updateRole = useMutation({
-    mutationFn: async ({ userId, role }: { userId: string; role: "admin" | "user" }) => {
-      const { error } = await supabase
-        .from("user_roles")
-        .update({ role })
-        .eq("user_id", userId);
-
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin-users"] });
-      toast.success("Permissão atualizada!");
-    },
-    onError: (error) => {
-      console.error("Erro ao atualizar permissão:", error);
-      toast.error("Erro ao atualizar permissão");
-    },
-  });
-
-  // Update user name mutation
-  const updateName = useMutation({
-    mutationFn: async ({ userId, nome }: { userId: string; nome: string }) => {
-      const { error } = await supabase
-        .from("user_profiles" as any)
-        .update({ nome })
-        .eq("user_id", userId);
-
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin-users"] });
-      toast.success("Nome atualizado!");
-    },
-    onError: (error) => {
-      console.error("Erro ao atualizar nome:", error);
-      toast.error("Erro ao atualizar nome");
-    },
-  });
-
-  // Delete user mutation
-  const deleteUser = useMutation({
+  // Adiciona alguém (que já tem login) à lista do Perdigueiro.
+  const addMember = useMutation({
     mutationFn: async (userId: string) => {
-      const { data, error } = await supabase.functions.invoke("delete-user", {
-        body: { userId },
-      });
+      const u = (portalUsers || []).find((x) => x.id === userId);
+      const { error, count } = await supabase
+        .from("perdigueiro_membros" as any)
+        .insert({ user_id: userId, nome: u?.nome ?? null, email: u?.email ?? null }, { count: "exact" });
 
       if (error) throw error;
-      if (data?.error) throw new Error(data.error);
-      
-      return data;
+      if (!count) throw new Error("Não foi possível adicionar (sem permissão de admin?).");
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin-users"] });
-      toast.success("Usuário excluído!");
+      queryClient.invalidateQueries({ queryKey: ["perdigueiro-membros"] });
+      toast.success("Membro adicionado ao Perdigueiro!");
+      setAddDialogOpen(false);
+      setSelectedUserId("");
     },
     onError: (error: any) => {
-      console.error("Erro ao excluir usuário:", error);
-      toast.error(error.message || "Erro ao excluir usuário");
+      console.error("Erro ao adicionar membro:", error);
+      toast.error(error.message || "Erro ao adicionar membro");
     },
   });
 
-  const [editingNameId, setEditingNameId] = useState<string | null>(null);
-  const [editingNameValue, setEditingNameValue] = useState("");
+  // Remove alguém da lista do Perdigueiro. NÃO apaga o login do portal —
+  // a pessoa perde acesso só a este sistema, continua nos demais.
+  const removeMember = useMutation({
+    mutationFn: async (id: string) => {
+      const { error, count } = await supabase
+        .from("perdigueiro_membros" as any)
+        .delete({ count: "exact" })
+        .eq("id", id);
 
-  const handleCreateUser = async () => {
-    if (!newUserEmail || !newUserPassword) {
-      toast.error("Preencha todos os campos");
-      return;
-    }
-
-    if (newUserPassword.length < 6) {
-      toast.error("A senha deve ter no mínimo 6 caracteres");
-      return;
-    }
-
-    setIsCreating(true);
-    try {
-      await createUser.mutateAsync({
-        email: newUserEmail,
-        password: newUserPassword,
-        role: newUserRole,
-      });
-    } finally {
-      setIsCreating(false);
-    }
-  };
+      if (error) throw error;
+      if (!count) throw new Error("Nada foi removido (sem permissão de admin?).");
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["perdigueiro-membros"] });
+      toast.success("Membro removido do Perdigueiro.");
+    },
+    onError: (error: any) => {
+      console.error("Erro ao remover membro:", error);
+      toast.error(error.message || "Erro ao remover membro");
+    },
+  });
 
   return (
     <div className="space-y-6">
 
-      {/* Users Management */}
+      {/* Membros do Perdigueiro */}
       <Collapsible defaultOpen>
         <Card>
           <CardHeader>
@@ -212,84 +172,63 @@ export default function Configuracoes() {
                 <CardTitle className="flex items-center gap-2">
                   <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform group-data-[state=closed]:-rotate-90" />
                   <Users className="h-5 w-5" />
-                  Usuários
+                  Membros do Perdigueiro
                 </CardTitle>
                 <CardDescription className="ml-10">
-                  Gerencie os usuários e suas permissões de acesso
+                  Somente as pessoas desta lista acessam os dados do Perdigueiro. As demais
+                  continuam no portal e nos outros sistemas — só não veem este.
                 </CardDescription>
               </CollapsibleTrigger>
-              <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
+              <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
                 <DialogTrigger asChild>
                   <Button>
                     <Plus className="mr-2 h-4 w-4" />
-                    Novo Usuário
+                    Adicionar Membro
                   </Button>
                 </DialogTrigger>
                 <DialogContent>
                   <DialogHeader>
-                    <DialogTitle>Criar Novo Usuário</DialogTitle>
+                    <DialogTitle>Adicionar membro ao Perdigueiro</DialogTitle>
                     <DialogDescription>
-                      Preencha os dados para criar uma nova conta de acesso ao sistema.
+                      Escolha uma pessoa que já tem login no portal. Ela passará a acessar o
+                      Perdigueiro. Isto não cria um novo login nem altera os outros sistemas.
                     </DialogDescription>
                   </DialogHeader>
 
                   <div className="space-y-4 py-4">
                     <div className="space-y-2">
-                      <Label htmlFor="email">Email</Label>
-                      <Input
-                        id="email"
-                        type="email"
-                        placeholder="usuario@email.com"
-                        value={newUserEmail}
-                        onChange={(e) => setNewUserEmail(e.target.value)}
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="password">Senha</Label>
-                      <Input
-                        id="password"
-                        type="password"
-                        placeholder="Mínimo 6 caracteres"
-                        value={newUserPassword}
-                        onChange={(e) => setNewUserPassword(e.target.value)}
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="role">Nível de Acesso</Label>
-                      <Select value={newUserRole} onValueChange={(v) => setNewUserRole(v as "admin" | "user")}>
-                        <SelectTrigger>
-                          <SelectValue />
+                      <Label htmlFor="pessoa">Pessoa</Label>
+                      <Select value={selectedUserId} onValueChange={setSelectedUserId}>
+                        <SelectTrigger id="pessoa">
+                          <SelectValue placeholder="Selecione uma pessoa..." />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="user">
-                            <div className="flex items-center gap-2">
-                              <Shield className="h-4 w-4" />
-                              Usuário
+                          {candidatos.length === 0 ? (
+                            <div className="px-2 py-1.5 text-sm text-muted-foreground">
+                              Todos os usuários do portal já estão na lista.
                             </div>
-                          </SelectItem>
-                          <SelectItem value="admin">
-                            <div className="flex items-center gap-2">
-                              <ShieldCheck className="h-4 w-4" />
-                              Administrador
-                            </div>
-                          </SelectItem>
+                          ) : (
+                            candidatos.map((u) => (
+                              <SelectItem key={u.id} value={u.id}>
+                                {u.nome ? `${u.nome} — ${u.email}` : u.email}
+                              </SelectItem>
+                            ))
+                          )}
                         </SelectContent>
                       </Select>
-                      <p className="text-xs text-muted-foreground">
-                        Usuários podem criar e editar registros. Administradores têm acesso total.
-                      </p>
                     </div>
                   </div>
 
                   <DialogFooter>
-                    <Button variant="outline" onClick={() => setCreateDialogOpen(false)}>
+                    <Button variant="outline" onClick={() => setAddDialogOpen(false)}>
                       Cancelar
                     </Button>
-                    <Button onClick={handleCreateUser} disabled={isCreating}>
-                      {isCreating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                      Criar Usuário
+                    <Button
+                      onClick={() => addMember.mutate(selectedUserId)}
+                      disabled={!selectedUserId || addMember.isPending}
+                    >
+                      {addMember.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                      Adicionar
                     </Button>
                   </DialogFooter>
                 </DialogContent>
@@ -302,9 +241,9 @@ export default function Configuracoes() {
                 <div className="flex items-center justify-center py-8">
                   <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
                 </div>
-              ) : !users || users.length === 0 ? (
+              ) : !membros || membros.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
-                  Nenhum usuário encontrado
+                  Nenhum membro cadastrado
                 </div>
               ) : (
                 <Table>
@@ -312,89 +251,20 @@ export default function Configuracoes() {
                     <TableRow>
                       <TableHead>Email</TableHead>
                       <TableHead>Nome</TableHead>
-                      <TableHead>Permissão</TableHead>
-                      <TableHead>Criado em</TableHead>
+                      <TableHead>Na lista desde</TableHead>
                       <TableHead className="text-right">Ações</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {users.map((user) => (
-                      <TableRow key={user.id}>
-                        <TableCell className="font-medium">{user.email}</TableCell>
-                        <TableCell>
-                          {editingNameId === user.id ? (
-                            <div className="flex items-center gap-1">
-                              <Input
-                                value={editingNameValue}
-                                onChange={(e) => setEditingNameValue(e.target.value)}
-                                className="h-8 w-40"
-                                autoFocus
-                                onKeyDown={(e) => {
-                                  if (e.key === "Enter") {
-                                    updateName.mutate({ userId: user.id, nome: editingNameValue });
-                                    setEditingNameId(null);
-                                  }
-                                  if (e.key === "Escape") setEditingNameId(null);
-                                }}
-                              />
-                              <Button
-                                variant="ghost" size="icon" className="h-7 w-7"
-                                onClick={() => {
-                                  updateName.mutate({ userId: user.id, nome: editingNameValue });
-                                  setEditingNameId(null);
-                                }}
-                              >
-                                <Check className="h-3 w-3" />
-                              </Button>
-                              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setEditingNameId(null)}>
-                                <X className="h-3 w-3" />
-                              </Button>
-                            </div>
-                          ) : (
-                            <div className="flex items-center gap-1">
-                              <span className="text-muted-foreground">{user.nome || "—"}</span>
-                              <Button
-                                variant="ghost" size="icon" className="h-7 w-7"
-                                onClick={() => {
-                                  setEditingNameId(user.id);
-                                  setEditingNameValue(user.nome || "");
-                                }}
-                              >
-                                <Pencil className="h-3 w-3" />
-                              </Button>
-                            </div>
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          <Select
-                            value={user.role}
-                            onValueChange={(role) => updateRole.mutate({ userId: user.id, role: role as "admin" | "user" })}
-                            disabled={user.id === currentUser?.id}
-                          >
-                            <SelectTrigger className="w-36">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="user">
-                                <Badge variant="secondary" className="gap-1">
-                                  <Shield className="h-3 w-3" />
-                                  Usuário
-                                </Badge>
-                              </SelectItem>
-                              <SelectItem value="admin">
-                                <Badge variant="default" className="gap-1">
-                                  <ShieldCheck className="h-3 w-3" />
-                                  Admin
-                                </Badge>
-                              </SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </TableCell>
+                    {membros.map((m) => (
+                      <TableRow key={m.id}>
+                        <TableCell className="font-medium">{m.email || "—"}</TableCell>
+                        <TableCell className="text-muted-foreground">{m.nome || "—"}</TableCell>
                         <TableCell className="text-muted-foreground">
-                          {new Date(user.created_at).toLocaleDateString("pt-BR")}
+                          {new Date(m.created_at).toLocaleDateString("pt-BR")}
                         </TableCell>
                         <TableCell className="text-right">
-                          {user.id !== currentUser?.id && (
+                          {m.user_id !== currentUser?.id && (
                             <AlertDialog>
                               <AlertDialogTrigger asChild>
                                 <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive">
@@ -403,18 +273,19 @@ export default function Configuracoes() {
                               </AlertDialogTrigger>
                               <AlertDialogContent>
                                 <AlertDialogHeader>
-                                  <AlertDialogTitle>Excluir usuário?</AlertDialogTitle>
+                                  <AlertDialogTitle>Remover do Perdigueiro?</AlertDialogTitle>
                                   <AlertDialogDescription>
-                                    Esta ação não pode ser desfeita. O usuário "{user.email}" será removido permanentemente do sistema.
+                                    "{m.nome || m.email}" deixará de acessar o Perdigueiro. O login
+                                    continua ativo e os outros sistemas não são afetados.
                                   </AlertDialogDescription>
                                 </AlertDialogHeader>
                                 <AlertDialogFooter>
                                   <AlertDialogCancel>Cancelar</AlertDialogCancel>
                                   <AlertDialogAction
-                                    onClick={() => deleteUser.mutate(user.id)}
+                                    onClick={() => removeMember.mutate(m.id)}
                                     className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                                   >
-                                    Excluir
+                                    Remover
                                   </AlertDialogAction>
                                 </AlertDialogFooter>
                               </AlertDialogContent>
