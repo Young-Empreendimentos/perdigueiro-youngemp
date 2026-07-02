@@ -24,7 +24,7 @@ type LoginForm = z.infer<typeof loginSchema>;
 type ResetForm = z.infer<typeof resetSchema>;
 
 export default function Login() {
-  const { user, isLoading: authLoading, signIn, resetPassword } = useAuth();
+  const { user, isLoading: authLoading, signIn, signInWithGoogle, resetPassword } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -65,6 +65,20 @@ export default function Login() {
       });
     }
     setIsSubmitting(false);
+  };
+
+  const handleGoogleLogin = async () => {
+    setIsSubmitting(true);
+    const { error } = await signInWithGoogle();
+    if (error) {
+      toast({
+        variant: "destructive",
+        title: "Erro no login com Google",
+        description: error.message,
+      });
+      setIsSubmitting(false);
+    }
+    // Em caso de sucesso, o navegador é redirecionado para o Google.
   };
 
   const handleResetPassword = async (data: ResetForm) => {
@@ -243,6 +257,25 @@ export default function Login() {
                     onClick={() => setShowResetForm(true)}
                   >
                     Esqueci minha senha
+                  </Button>
+
+                  <div className="relative py-2">
+                    <div className="absolute inset-0 flex items-center">
+                      <span className="w-full border-t" />
+                    </div>
+                    <div className="relative flex justify-center text-xs uppercase">
+                      <span className="bg-background px-2 text-muted-foreground">ou</span>
+                    </div>
+                  </div>
+
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full"
+                    onClick={handleGoogleLogin}
+                    disabled={isSubmitting}
+                  >
+                    Entrar com Google
                   </Button>
                 </form>
               </Form>
