@@ -71,6 +71,7 @@ interface Membro {
   nome: string | null;
   email: string | null;
   ativo: boolean;
+  nivel: "admin" | "user";
   created_at: string;
 }
 
@@ -79,6 +80,7 @@ export default function Configuracoes() {
   const queryClient = useQueryClient();
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState<string>("");
+  const [newMemberNivel, setNewMemberNivel] = useState<"admin" | "user">("user");
 
   // Lista de membros do Perdigueiro (tabela nova, dedicada).
   const { data: membros, isLoading } = useQuery({
@@ -86,7 +88,7 @@ export default function Configuracoes() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("perdigueiro_membros" as any)
-        .select("id, user_id, nome, email, ativo, created_at")
+        .select("id, user_id, nome, email, ativo, nivel, created_at")
         .order("nome");
 
       if (error) {
@@ -121,7 +123,7 @@ export default function Configuracoes() {
       const u = (portalUsers || []).find((x) => x.id === userId);
       const { error, count } = await supabase
         .from("perdigueiro_membros" as any)
-        .insert({ user_id: userId, nome: u?.nome ?? null, email: u?.email ?? null }, { count: "exact" });
+        .insert({ user_id: userId, nome: u?.nome ?? null, email: u?.email ?? null, nivel: newMemberNivel }, { count: "exact" });
 
       if (error) throw error;
       if (!count) throw new Error("Não foi possível adicionar (sem permissão de admin?).");
@@ -131,6 +133,7 @@ export default function Configuracoes() {
       toast.success("Membro adicionado ao Perdigueiro!");
       setAddDialogOpen(false);
       setSelectedUserId("");
+      setNewMemberNivel("user");
     },
     onError: (error: any) => {
       console.error("Erro ao adicionar membro:", error);
@@ -157,6 +160,26 @@ export default function Configuracoes() {
     onError: (error: any) => {
       console.error("Erro ao remover membro:", error);
       toast.error(error.message || "Erro ao remover membro");
+    },
+  });
+
+  // Muda o nível (admin/usuário) de um membro — grava só na tabela nova.
+  const updateNivel = useMutation({
+    mutationFn: async ({ id, nivel }: { id: string; nivel: "admin" | "user" }) => {
+      const { error, count } = await supabase
+        .from("perdigueiro_membros" as any)
+        .update({ nivel }, { count: "exact" })
+        .eq("id", id);
+      if (error) throw error;
+      if (!count) throw new Error("Nada foi alterado (sem permissão de admin?).");
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["perdigueiro-membros"] });
+      toast.success("Nível atualizado!");
+    },
+    onError: (error: any) => {
+      console.error("Erro ao atualizar nível:", error);
+      toast.error(error.message || "Erro ao atualizar nível");
     },
   });
 
@@ -217,6 +240,32 @@ export default function Configuracoes() {
                         </SelectContent>
                       </Select>
                     </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="nivel">Nível de acesso</Label>
+                      <Select value={newMemberNivel} onValueChange={(v) => setNewMemberNivel(v as "admin" | "user")}>
+                        <SelectTrigger id="nivel">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="user">
+                            <div className="flex items-center gap-2">
+                              <Shield className="h-4 w-4" />
+                              Usuário
+                            </div>
+                          </SelectItem>
+                          <SelectItem value="admin">
+                            <div className="flex items-center gap-2">
+                              <ShieldCheck className="h-4 w-4" />
+                              Administrador
+                            </div>
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <p className="text-xs text-muted-foreground">
+                        Usuário: cria e edita registros. Administrador: acesso total ao Perdigueiro (inclusive esta tela).
+                      </p>
+                    </div>
                   </div>
 
                   <DialogFooter>
@@ -251,6 +300,7 @@ export default function Configuracoes() {
                     <TableRow>
                       <TableHead>Email</TableHead>
                       <TableHead>Nome</TableHead>
+                      <TableHead>Nível</TableHead>
                       <TableHead>Na lista desde</TableHead>
                       <TableHead className="text-right">Ações</TableHead>
                     </TableRow>
@@ -260,6 +310,31 @@ export default function Configuracoes() {
                       <TableRow key={m.id}>
                         <TableCell className="font-medium">{m.email || "—"}</TableCell>
                         <TableCell className="text-muted-foreground">{m.nome || "—"}</TableCell>
+                        <TableCell>
+                          <Select
+                            value={m.nivel}
+                            onValueChange={(v) => updateNivel.mutate({ id: m.id, nivel: v as "admin" | "user" })}
+                            disabled={m.user_id === currentUser?.id}
+                          >
+                            <SelectTrigger className="w-36">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="user">
+                                <Badge variant="secondary" className="gap-1">
+                                  <Shield className="h-3 w-3" />
+                                  Usuário
+                                </Badge>
+                              </SelectItem>
+                              <SelectItem value="admin">
+                                <Badge variant="default" className="gap-1">
+                                  <ShieldCheck className="h-3 w-3" />
+                                  Admin
+                                </Badge>
+                              </SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </TableCell>
                         <TableCell className="text-muted-foreground">
                           {new Date(m.created_at).toLocaleDateString("pt-BR")}
                         </TableCell>

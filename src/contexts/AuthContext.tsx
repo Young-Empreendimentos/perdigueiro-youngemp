@@ -9,6 +9,7 @@ interface AuthContextType {
   session: Session | null;
   role: AppRole | null;
   isLoading: boolean;
+  isMember: boolean;
   isAdmin: boolean;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
@@ -23,19 +24,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [role, setRole] = useState<AppRole | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  const fetchUserRole = async (userId: string) => {
+  // Fonte única de verdade do Perdigueiro: a tabela perdigueiro_membros.
+  // Retorna o nível (admin/user) se a pessoa for membro ATIVO; senão null (não é membro).
+  const fetchMembership = async (userId: string): Promise<AppRole | null> => {
     const { data, error } = await supabase
-      .from("user_roles")
-      .select("role")
+      .from("perdigueiro_membros" as any)
+      .select("nivel, ativo")
       .eq("user_id", userId)
-      .single();
+      .maybeSingle();
 
     if (error) {
-      console.error("Erro ao buscar role:", error);
+      console.error("Erro ao verificar membro do Perdigueiro:", error);
       return null;
     }
 
-    return data?.role as AppRole;
+    const row = data as { nivel: AppRole; ativo: boolean } | null;
+    if (!row || !row.ativo) return null;
+    return row.nivel;
   };
 
   useEffect(() => {
@@ -48,8 +53,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (currentSession?.user) {
           // Use setTimeout to avoid potential Supabase client deadlock
           setTimeout(async () => {
-            const userRole = await fetchUserRole(currentSession.user.id);
-            setRole(userRole);
+            const nivel = await fetchMembership(currentSession.user.id);
+            setRole(nivel);
             setIsLoading(false);
           }, 0);
         } else {
@@ -112,6 +117,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         session,
         role,
         isLoading,
+        isMember: role !== null,
         isAdmin: role === "admin",
         signIn,
         signOut,

@@ -1,5 +1,6 @@
 import { Navigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import { AguardandoAutorizacao } from "@/components/AguardandoAutorizacao";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -7,7 +8,7 @@ interface ProtectedRouteProps {
 }
 
 export function ProtectedRoute({ children, requireAdmin = false }: ProtectedRouteProps) {
-  const { user, isLoading, isAdmin } = useAuth();
+  const { user, isLoading, isMember, isAdmin } = useAuth();
 
   if (isLoading) {
     return (
@@ -22,6 +23,12 @@ export function ProtectedRoute({ children, requireAdmin = false }: ProtectedRout
 
   if (!user) {
     return <Navigate to="/login" replace />;
+  }
+
+  // Está logado, mas não está na lista do Perdigueiro (perdigueiro_membros):
+  // não entra — a tentativa é registrada e fica aguardando autorização da direção.
+  if (!isMember) {
+    return <AguardandoAutorizacao />;
   }
 
   if (requireAdmin && !isAdmin) {

@@ -8,6 +8,7 @@ import { AtividadesChart } from "@/components/dashboard/AtividadesChart";
 import { StatusPieChart } from "@/components/dashboard/StatusPieChart";
 import { QuickAccess } from "@/components/dashboard/QuickAccess";
 import { ComunicadosDirecao } from "@/components/dashboard/ComunicadosDirecao";
+import { SolicitacoesAcesso } from "@/components/dashboard/SolicitacoesAcesso";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
@@ -58,6 +59,9 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-8">
+
+      {/* Solicitações de acesso (aparece só para admins com pendências) */}
+      <SolicitacoesAcesso />
 
       {/* Meta Semestral */}
       {isLoading ? (
