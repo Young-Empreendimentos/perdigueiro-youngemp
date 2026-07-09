@@ -227,7 +227,7 @@ export default function Propostas() {
           {groupedByMonth.map(([monthKey, monthPropostas]) => (
             <div key={monthKey}>
               <h3 className="text-lg font-semibold mb-3 capitalize">
-                {format(new Date(monthKey + "-01"), "MMMM yyyy", { locale: ptBR })}
+                {format(new Date(monthKey + "-01T00:00:00"), "MMMM yyyy", { locale: ptBR })}
               </h3>
               <div className="space-y-3">
                 {monthPropostas.map((proposta) => (
