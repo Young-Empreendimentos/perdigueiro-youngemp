@@ -22,6 +22,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -46,6 +47,8 @@ const formSchema = z.object({
   data_proposta: z.date(),
   tipo: z.enum(["compra", "parceria", "mista"]),
   descricao: z.string().optional(),
+  preco_ha: z.string().optional(),
+  percentual_proposto: z.string().optional(),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -64,8 +67,14 @@ export function CreatePropostaDialog() {
       data_proposta: new Date(),
       tipo: "compra",
       descricao: "",
+      preco_ha: "",
+      percentual_proposto: "",
     },
   });
+
+  const tipoSelecionado = form.watch("tipo");
+  const showPrecoHa = tipoSelecionado === "compra" || tipoSelecionado === "mista";
+  const showPercentual = tipoSelecionado === "parceria" || tipoSelecionado === "mista";
 
   const onSubmit = async (values: FormData) => {
     if (!user) {
@@ -86,6 +95,14 @@ export function CreatePropostaDialog() {
         data_proposta: format(values.data_proposta, "yyyy-MM-dd"),
         tipo: values.tipo,
         descricao: values.descricao || null,
+        preco_ha:
+          (values.tipo === "compra" || values.tipo === "mista") && values.preco_ha
+            ? parseFloat(values.preco_ha)
+            : null,
+        percentual_proposto:
+          (values.tipo === "parceria" || values.tipo === "mista") && values.percentual_proposto
+            ? parseFloat(values.percentual_proposto)
+            : null,
         arquivo_carta: arquivoCarta,
         created_by: user.id,
       });
@@ -167,6 +184,38 @@ export function CreatePropostaDialog() {
                 </FormItem>
               )}
             />
+
+            {showPercentual && (
+              <FormField
+                control={form.control}
+                name="percentual_proposto"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Percentual Proposto (%)</FormLabel>
+                    <FormControl>
+                      <Input type="number" step="0.1" min="0" max="100" placeholder="Ex.: 20" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
+
+            {showPrecoHa && (
+              <FormField
+                control={form.control}
+                name="preco_ha"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Preço por hectare (R$)</FormLabel>
+                    <FormControl>
+                      <Input type="number" step="0.01" min="0" placeholder="Ex.: 50000" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
 
             <FormField
               control={form.control}
