@@ -4439,6 +4439,7 @@ export type Database = {
           tamanho_lote_minimo: number | null
           tamanho_m2: number | null
           updated_at: string
+          vgv_atribuido: number | null
           zona_plano_diretor: string | null
         }
         Insert: {
@@ -4474,6 +4475,7 @@ export type Database = {
           tamanho_lote_minimo?: number | null
           tamanho_m2?: number | null
           updated_at?: string
+          vgv_atribuido?: number | null
           zona_plano_diretor?: string | null
         }
         Update: {
@@ -4509,6 +4511,7 @@ export type Database = {
           tamanho_lote_minimo?: number | null
           tamanho_m2?: number | null
           updated_at?: string
+          vgv_atribuido?: number | null
           zona_plano_diretor?: string | null
         }
         Relationships: [
