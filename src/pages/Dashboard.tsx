@@ -22,7 +22,13 @@ import { differenceInWeeks } from "date-fns";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Link } from "react-router-dom";
 
-const META_SEMESTRAL = 5;
+const fmtCurrencyBRL = (v: number) =>
+  new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 }).format(v);
+const fmtCurrencyShort = (v: number) => {
+  if (v >= 1_000_000) return `R$ ${(v / 1_000_000).toFixed(v >= 10_000_000 ? 1 : 2)}M`;
+  if (v >= 1_000) return `R$ ${(v / 1_000).toFixed(0)}k`;
+  return fmtCurrencyBRL(v);
+};
 
 function getSemesterLabel() {
   const month = new Date().getMonth();
