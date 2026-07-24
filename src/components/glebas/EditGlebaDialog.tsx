@@ -224,6 +224,11 @@ export function EditGlebaDialog({ gleba, open, onOpenChange }: EditGlebaDialogPr
         arquivo_contrato: arquivoContrato,
       };
 
+      // Only admins can send vgv_atribuido; strip for others
+      if (!isAdmin) {
+        delete updateData.vgv_atribuido;
+      }
+
       // Clear data_fechamento if not negocio_fechado
       if (gleba.status !== "negocio_fechado") {
         delete updateData.data_fechamento;
