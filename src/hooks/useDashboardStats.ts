@@ -11,13 +11,6 @@ interface InactiveGleba {
   status: string;
 }
 
-interface NegocioFechado {
-  id: string;
-  numero: number | null;
-  apelido: string;
-  cidade_id: string | null;
-}
-
 interface DashboardStats {
   totalGlebas: number;
   glebasPorStatus: Record<string, number>;
@@ -26,6 +19,8 @@ interface DashboardStats {
   negociosFechados: number;
   negociosFechadosSemestre: number;
   negociosFechadosSemestreList: NegocioFechado[];
+  vgvFechadoSemestre: number;
+  metaVgvSemestre: number;
   propostasPorMes: { month: string; count: number }[];
   atividadesPorDia: { day: string; count: number }[];
   atividadesEstaSemana: number;
@@ -33,6 +28,14 @@ interface DashboardStats {
   glebasPrioritarias: number;
   glebasInativas: InactiveGleba[];
   glebasComInfoFaltando: number;
+}
+
+interface NegocioFechado {
+  id: string;
+  numero: number | null;
+  apelido: string;
+  cidade_id: string | null;
+  vgv_atribuido: number | null;
 }
 
 const STATUS_LABELS: Record<string, string> = {
