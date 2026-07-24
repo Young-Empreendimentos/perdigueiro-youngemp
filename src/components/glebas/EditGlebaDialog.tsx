@@ -45,6 +45,7 @@ const glebaSchema = z.object({
   proprietario_nome: z.string().optional(),
   tamanho_m2: z.coerce.number().positive().optional().nullable(),
   preco: z.coerce.number().positive().optional().nullable(),
+  vgv_atribuido: z.coerce.number().min(0).optional().nullable(),
   percentual_permuta: z.coerce.number().min(0).max(100).optional().nullable(),
   aceita_permuta: z.enum(["incerto", "nao", "sim"]).default("incerto"),
   zona_plano_diretor: z.string().optional(),
