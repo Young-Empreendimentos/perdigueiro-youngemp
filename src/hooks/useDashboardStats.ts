@@ -111,7 +111,13 @@ export function useDashboardStats() {
       const negociosFechadosSemestre = negociosSemestre.length;
       const negociosFechadosSemestreList: NegocioFechado[] = negociosSemestre.map((g: any) => ({
         id: g.id, numero: g.numero, apelido: g.apelido, cidade_id: g.cidade_id,
+        vgv_atribuido: g.vgv_atribuido != null ? Number(g.vgv_atribuido) : null,
       }));
+      const vgvFechadoSemestre = negociosFechadosSemestreList.reduce(
+        (sum, g) => sum + (g.vgv_atribuido || 0), 0
+      );
+      const metaRaw = (metaConfig as any)?.data?.value;
+      const metaVgvSemestre = metaRaw != null ? Number(metaRaw) || 0 : 0;
       const glebasEmStandby = glebasPorStatus["standby"] || 0;
       const glebasPrioritarias = glebas.filter((g) => g.prioridade).length;
 
