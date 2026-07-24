@@ -184,6 +184,8 @@ export function useDashboardStats() {
         negociosFechados,
         negociosFechadosSemestre,
         negociosFechadosSemestreList,
+        vgvFechadoSemestre,
+        metaVgvSemestre,
         propostasPorMes,
         atividadesPorDia,
         atividadesEstaSemana,
