@@ -467,6 +467,38 @@ export function EditGlebaDialog({ gleba, open, onOpenChange }: EditGlebaDialogPr
 
                 <FormField
                   control={form.control}
+                  name="vgv_atribuido"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>
+                        VGV Atribuído (R$){" "}
+                        {!isAdmin && (
+                          <span className="text-xs font-normal text-muted-foreground">
+                            — somente diretoria
+                          </span>
+                        )}
+                      </FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          step="0.01"
+                          min={0}
+                          placeholder="Ex: 5000000"
+                          {...field}
+                          value={field.value ?? ""}
+                          disabled={!isAdmin}
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        Valor Geral de Venda utilizado para computar o atingimento da meta semestral.
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
                   name="aceita_permuta"
                   render={({ field }) => (
                     <FormItem>
