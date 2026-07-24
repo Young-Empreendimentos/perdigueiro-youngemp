@@ -383,16 +383,36 @@ export function GlebaDetailsDialog({
                   </Select>
                 </div>
               </div>
-              <Button
-                onClick={() => {
-                  onOpenChange(false);
-                  onEdit?.(gleba);
-                }}
-                className="gap-2"
-              >
-                <Pencil className="h-4 w-4" />
-                Editar
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  onClick={async () => {
+                    try {
+                      const { exportGlebaToPdf } = await import("@/lib/glebaPdfExport");
+                      toast.loading("Gerando PDF...", { id: "pdf-export" });
+                      await exportGlebaToPdf(gleba);
+                      toast.success("Relatório gerado!", { id: "pdf-export" });
+                    } catch (e) {
+                      console.error(e);
+                      toast.error("Erro ao gerar PDF", { id: "pdf-export" });
+                    }
+                  }}
+                  className="gap-2"
+                >
+                  <FileText className="h-4 w-4" />
+                  Exportar PDF
+                </Button>
+                <Button
+                  onClick={() => {
+                    onOpenChange(false);
+                    onEdit?.(gleba);
+                  }}
+                  className="gap-2"
+                >
+                  <Pencil className="h-4 w-4" />
+                  Editar
+                </Button>
+              </div>
             </div>
           </DialogHeader>
 
