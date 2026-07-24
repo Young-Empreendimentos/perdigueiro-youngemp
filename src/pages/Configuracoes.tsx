@@ -701,3 +701,115 @@ function ReprocessKmzCard() {
     </Card>
   );
 }
+
+function MetaVgvCard() {
+  const queryClient = useQueryClient();
+  const { isAdmin } = useAuth();
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState<string>("");
+
+  const { data: meta, isLoading } = useQuery({
+    queryKey: ["system_config", "meta_semestre_vgv"],
+    queryFn: async () => {
+      const { data, error } = await (supabase.from("system_config") as any)
+        .select("value")
+        .eq("key", "meta_semestre_vgv")
+        .maybeSingle();
+      if (error) throw error;
+      const raw = data?.value;
+      return raw != null ? Number(raw) || 0 : 0;
+    },
+  });
+
+  const saveMeta = useMutation({
+    mutationFn: async (value: number) => {
+      const { error } = await (supabase.from("system_config") as any).upsert(
+        { key: "meta_semestre_vgv", value: String(value) },
+        { onConflict: "key" }
+      );
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["system_config", "meta_semestre_vgv"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard-stats"] });
+      toast.success("Meta atualizada");
+      setEditing(false);
+    },
+    onError: (e: any) => toast.error(e.message || "Erro ao salvar"),
+  });
+
+  const formatBRL = (v: number) =>
+    new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 }).format(v);
+
+  const startEdit = () => {
+    setDraft(meta ? String(meta) : "");
+    setEditing(true);
+  };
+
+  const handleSave = () => {
+    const n = Number(draft.replace(/\./g, "").replace(",", "."));
+    if (!isFinite(n) || n < 0) {
+      toast.error("Informe um valor válido");
+      return;
+    }
+    saveMeta.mutate(n);
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex items-start gap-3">
+          <div className="rounded-lg bg-primary/10 p-2">
+            <Shield className="h-5 w-5 text-primary" />
+          </div>
+          <div className="flex-1">
+            <CardTitle>Meta de VGV do Semestre</CardTitle>
+            <CardDescription>
+              Valor Geral de Venda alvo. O atingimento considera todos os negócios fechados dentro do semestre corrente e seus VGV atribuídos.
+            </CardDescription>
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent>
+        {isLoading ? (
+          <p className="text-sm text-muted-foreground">Carregando...</p>
+        ) : editing && isAdmin ? (
+          <div className="flex items-end gap-2 max-w-md">
+            <div className="flex-1">
+              <Label htmlFor="meta-vgv">Meta (R$)</Label>
+              <Input
+                id="meta-vgv"
+                type="number"
+                step="0.01"
+                min={0}
+                value={draft}
+                onChange={(e) => setDraft(e.target.value)}
+                placeholder="Ex: 25000000"
+              />
+            </div>
+            <Button onClick={handleSave} disabled={saveMeta.isPending}>
+              {saveMeta.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+            </Button>
+            <Button variant="outline" onClick={() => setEditing(false)}>
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+        ) : (
+          <div className="flex items-center gap-3">
+            <span className="text-2xl font-bold">
+              {meta && meta > 0 ? formatBRL(meta) : <span className="text-muted-foreground text-base font-normal">Meta não definida</span>}
+            </span>
+            {isAdmin && (
+              <Button variant="outline" size="sm" onClick={startEdit}>
+                <Pencil className="h-3 w-3 mr-1" /> Editar
+              </Button>
+            )}
+          </div>
+        )}
+        {!isAdmin && (
+          <p className="text-xs text-muted-foreground mt-2">Somente a diretoria pode editar este valor.</p>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
