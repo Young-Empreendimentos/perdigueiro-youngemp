@@ -129,6 +129,7 @@ export function EditGlebaDialog({ gleba, open, onOpenChange }: EditGlebaDialogPr
       proprietario_nome: "",
       tamanho_m2: null,
       preco: null,
+      vgv_atribuido: null,
       percentual_permuta: null,
       aceita_permuta: "incerto",
       zona_plano_diretor: "",
