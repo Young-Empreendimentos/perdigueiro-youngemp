@@ -1,6 +1,8 @@
 import { useState, useRef } from "react";
 import { format } from "date-fns";
-import { Plus, Search, MapPin, Trash2, ChevronRight, CalendarDays, DollarSign, Ruler, FileText, ExternalLink, Pencil, Image as ImageIcon, Upload, X } from "lucide-react";
+import { Plus, Search, MapPin, Trash2, ChevronRight, CalendarDays, DollarSign, Ruler, FileText, ExternalLink, Pencil, Image as ImageIcon, Upload, X, Download, Loader2 } from "lucide-react";
+import { exportPesquisaToPdf } from "@/lib/pesquisaExport";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
