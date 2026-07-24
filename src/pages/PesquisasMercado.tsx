@@ -1,6 +1,7 @@
 import { useState, useRef } from "react";
 import { format } from "date-fns";
-import { Plus, Search, MapPin, Trash2, ChevronRight, CalendarDays, DollarSign, Ruler, FileText, ExternalLink, Pencil, Image as ImageIcon, Upload, X } from "lucide-react";
+import { Plus, Search, MapPin, Trash2, ChevronRight, CalendarDays, DollarSign, Ruler, FileText, ExternalLink, Pencil, Image as ImageIcon, Upload, X, Download, Loader2 } from "lucide-react";
+import { exportPesquisaToPdf } from "@/lib/pesquisaExport";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -373,17 +374,35 @@ function PesquisaDetail({ pesquisa, onBack }: { pesquisa: PesquisaMercado; onBac
     return (preco / tamanho).toFixed(2);
   };
 
+  const [exporting, setExporting] = useState(false);
+  const handleExport = async () => {
+    setExporting(true);
+    try {
+      await exportPesquisaToPdf(pesquisa, terrenos);
+      toast.success("PDF gerado!");
+    } catch (e: any) {
+      console.error(e);
+      toast.error("Erro ao gerar PDF");
+    } finally {
+      setExporting(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-4 flex-wrap">
         <Button variant="outline" onClick={onBack}>← Voltar</Button>
-        <div>
+        <div className="flex-1 min-w-0">
           <h1 className="text-2xl font-bold">{pesquisa.nome}</h1>
           <p className="text-sm text-muted-foreground flex items-center gap-3">
             <span>{format(new Date(pesquisa.data_pesquisa + "T00:00:00"), "dd/MM/yyyy")}</span>
             {pesquisa.cidade && <span className="flex items-center gap-1"><MapPin className="h-3 w-3" />{pesquisa.cidade.nome}</span>}
           </p>
         </div>
+        <Button onClick={handleExport} disabled={exporting || terrenos.length === 0} variant="outline">
+          {exporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
+          Exportar PDF
+        </Button>
       </div>
 
       {pesquisa.observacoes && (

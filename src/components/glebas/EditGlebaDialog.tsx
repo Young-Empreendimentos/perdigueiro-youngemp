@@ -37,6 +37,7 @@ import { Tables } from "@/integrations/supabase/types";
 import { Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
+import { useAuth } from "@/contexts/AuthContext";
 
 type Gleba = Tables<"glebas">;
 
@@ -45,6 +46,7 @@ const glebaSchema = z.object({
   proprietario_nome: z.string().optional(),
   tamanho_m2: z.coerce.number().positive().optional().nullable(),
   preco: z.coerce.number().positive().optional().nullable(),
+  vgv_atribuido: z.coerce.number().min(0).optional().nullable(),
   percentual_permuta: z.coerce.number().min(0).max(100).optional().nullable(),
   aceita_permuta: z.enum(["incerto", "nao", "sim"]).default("incerto"),
   zona_plano_diretor: z.string().optional(),
@@ -76,6 +78,7 @@ export function EditGlebaDialog({ gleba, open, onOpenChange }: EditGlebaDialogPr
   const [extractedGeojson, setExtractedGeojson] = useState<any>(undefined); // undefined = not changed
   const [isProcessingKmz, setIsProcessingKmz] = useState(false);
   const { updateGleba } = useGlebas();
+  const { isAdmin } = useAuth();
   const { toast } = useToast();
 
   // Fetch cidades
@@ -126,6 +129,7 @@ export function EditGlebaDialog({ gleba, open, onOpenChange }: EditGlebaDialogPr
       proprietario_nome: "",
       tamanho_m2: null,
       preco: null,
+      vgv_atribuido: null,
       percentual_permuta: null,
       aceita_permuta: "incerto",
       zona_plano_diretor: "",
@@ -149,6 +153,7 @@ export function EditGlebaDialog({ gleba, open, onOpenChange }: EditGlebaDialogPr
         proprietario_nome: gleba.proprietario_nome || "",
         tamanho_m2: gleba.tamanho_m2 ? Number(gleba.tamanho_m2) : null,
         preco: gleba.preco ? Number(gleba.preco) : null,
+        vgv_atribuido: (gleba as any).vgv_atribuido != null ? Number((gleba as any).vgv_atribuido) : null,
         percentual_permuta: gleba.percentual_permuta ? Number(gleba.percentual_permuta) : null,
         aceita_permuta: gleba.aceita_permuta || "incerto",
         zona_plano_diretor: gleba.zona_plano_diretor || "",
@@ -218,6 +223,11 @@ export function EditGlebaDialog({ gleba, open, onOpenChange }: EditGlebaDialogPr
         arquivo_protocolo: arquivoProtocolo,
         arquivo_contrato: arquivoContrato,
       };
+
+      // Only admins can send vgv_atribuido; strip for others
+      if (!isAdmin) {
+        delete updateData.vgv_atribuido;
+      }
 
       // Clear data_fechamento if not negocio_fechado
       if (gleba.status !== "negocio_fechado") {
@@ -454,6 +464,38 @@ export function EditGlebaDialog({ gleba, open, onOpenChange }: EditGlebaDialogPr
                     )}
                   />
                 </div>
+
+                <FormField
+                  control={form.control}
+                  name="vgv_atribuido"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>
+                        VGV Atribuído (R$){" "}
+                        {!isAdmin && (
+                          <span className="text-xs font-normal text-muted-foreground">
+                            — somente diretoria
+                          </span>
+                        )}
+                      </FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          step="0.01"
+                          min={0}
+                          placeholder="Ex: 5000000"
+                          {...field}
+                          value={field.value ?? ""}
+                          disabled={!isAdmin}
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        Valor Geral de Venda utilizado para computar o atingimento da meta semestral.
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
                 <FormField
                   control={form.control}

@@ -23,7 +23,13 @@ import { differenceInWeeks } from "date-fns";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Link } from "react-router-dom";
 
-const META_SEMESTRAL = 5;
+const fmtCurrencyBRL = (v: number) =>
+  new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 }).format(v);
+const fmtCurrencyShort = (v: number) => {
+  if (v >= 1_000_000) return `R$ ${(v / 1_000_000).toFixed(v >= 10_000_000 ? 1 : 2)}M`;
+  if (v >= 1_000) return `R$ ${(v / 1_000).toFixed(0)}k`;
+  return fmtCurrencyBRL(v);
+};
 
 function getSemesterLabel() {
   const month = new Date().getMonth();
@@ -49,8 +55,10 @@ export default function Dashboard() {
   const negociosSemestre = stats?.negociosFechadosSemestre || 0;
   const negociosList = stats?.negociosFechadosSemestreList || [];
   const glebasInativas = stats?.glebasInativas || [];
-  const progressPercent = Math.min((negociosSemestre / META_SEMESTRAL) * 100, 100);
-  const metaAtingida = negociosSemestre >= META_SEMESTRAL;
+  const vgvFechado = stats?.vgvFechadoSemestre || 0;
+  const metaVgv = stats?.metaVgvSemestre || 0;
+  const progressPercent = metaVgv > 0 ? Math.min((vgvFechado / metaVgv) * 100, 100) : 0;
+  const metaAtingida = metaVgv > 0 && vgvFechado >= metaVgv;
 
   const getCidadeName = (cidadeId: string | null) => {
     if (!cidadeId || !cidades) return "—";
@@ -78,15 +86,20 @@ export default function Dashboard() {
               ) : (
                 <Target className="h-5 w-5 text-primary" />
               )}
-              Meta de Negócios Fechados — <span className="text-muted-foreground font-normal text-sm">{getSemesterLabel()}</span>
+              Meta de VGV — <span className="text-muted-foreground font-normal text-sm">{getSemesterLabel()}</span>
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex items-end gap-4">
               <div className="flex-1">
-                <div className="flex items-baseline gap-1 mb-2">
-                  <span className="text-3xl font-bold">{negociosSemestre}</span>
-                  <span className="text-lg text-muted-foreground">/ {META_SEMESTRAL}</span>
+                <div className="flex items-baseline gap-2 mb-2 flex-wrap">
+                  <span className="text-3xl font-bold">{fmtCurrencyShort(vgvFechado)}</span>
+                  <span className="text-lg text-muted-foreground">
+                    / {metaVgv > 0 ? fmtCurrencyShort(metaVgv) : "meta não definida"}
+                  </span>
+                  <Badge variant="outline" className="ml-2">
+                    {negociosSemestre} {negociosSemestre === 1 ? "negócio" : "negócios"}
+                  </Badge>
                 </div>
                 <Progress value={progressPercent} className="h-3" />
                 <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
@@ -108,7 +121,7 @@ export default function Dashboard() {
 
       {/* Modal de detalhes da meta */}
       <Dialog open={metaDialogOpen} onOpenChange={setMetaDialogOpen}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Trophy className="h-5 w-5 text-primary" />
@@ -126,6 +139,7 @@ export default function Dashboard() {
                   <TableHead className="w-[60px]">Nº</TableHead>
                   <TableHead>Apelido</TableHead>
                   <TableHead>Cidade</TableHead>
+                  <TableHead className="text-right">VGV atribuído</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -136,13 +150,18 @@ export default function Dashboard() {
                     </TableCell>
                     <TableCell className="font-medium">{g.apelido}</TableCell>
                     <TableCell className="text-muted-foreground">{getCidadeName(g.cidade_id)}</TableCell>
+                    <TableCell className="text-right font-medium">
+                      {g.vgv_atribuido ? fmtCurrencyBRL(g.vgv_atribuido) : <span className="text-muted-foreground">—</span>}
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
             </Table>
           )}
           <p className="text-xs text-muted-foreground text-center">
-            Meta: {negociosSemestre} / {META_SEMESTRAL}
+            {metaVgv > 0
+              ? `VGV total: ${fmtCurrencyBRL(vgvFechado)} / ${fmtCurrencyBRL(metaVgv)}`
+              : `VGV total: ${fmtCurrencyBRL(vgvFechado)} — meta não definida`}
           </p>
         </DialogContent>
       </Dialog>
