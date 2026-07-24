@@ -431,6 +431,9 @@ export default function Configuracoes() {
         </Card>
       </Collapsible>
 
+      {/* Meta VGV Semestral */}
+      <MetaVgvCard />
+
       {/* Tipos de Arquivo */}
       <TiposArquivoCard />
 
