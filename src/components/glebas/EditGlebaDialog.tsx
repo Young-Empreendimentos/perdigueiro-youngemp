@@ -77,6 +77,7 @@ export function EditGlebaDialog({ gleba, open, onOpenChange }: EditGlebaDialogPr
   const [extractedGeojson, setExtractedGeojson] = useState<any>(undefined); // undefined = not changed
   const [isProcessingKmz, setIsProcessingKmz] = useState(false);
   const { updateGleba } = useGlebas();
+  const { isAdmin } = useAuth();
   const { toast } = useToast();
 
   // Fetch cidades
