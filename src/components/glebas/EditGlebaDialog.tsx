@@ -153,6 +153,7 @@ export function EditGlebaDialog({ gleba, open, onOpenChange }: EditGlebaDialogPr
         proprietario_nome: gleba.proprietario_nome || "",
         tamanho_m2: gleba.tamanho_m2 ? Number(gleba.tamanho_m2) : null,
         preco: gleba.preco ? Number(gleba.preco) : null,
+        vgv_atribuido: (gleba as any).vgv_atribuido != null ? Number((gleba as any).vgv_atribuido) : null,
         percentual_permuta: gleba.percentual_permuta ? Number(gleba.percentual_permuta) : null,
         aceita_permuta: gleba.aceita_permuta || "incerto",
         zona_plano_diretor: gleba.zona_plano_diretor || "",
