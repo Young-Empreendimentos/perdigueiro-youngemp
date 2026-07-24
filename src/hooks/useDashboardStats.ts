@@ -86,13 +86,14 @@ export function useDashboardStats() {
       const semesterStart = semesterStartDate > cutoffDate ? semesterStartDate : cutoffDate;
 
       // Buscar dados em páginas de 1000 linhas para não cair no limite padrão do Supabase/PostgREST
-      const [glebas, propostas, cidades, atividades, negociosSemestre, recentAtividades] = await Promise.all([
+      const [glebas, propostas, cidades, atividades, negociosSemestre, recentAtividades, metaConfig] = await Promise.all([
         fetchAllPages<any>((from, to) => supabase.from("glebas").select("id, status, prioridade, numero, apelido, cidade_id, tamanho_m2, preco, data_visita, arquivo_protocolo, motivo_descarte_id, arquivo_contrato, data_fechamento, standby_motivo").range(from, to)),
         fetchAllPages<any>((from, to) => supabase.from("propostas").select("id, data_proposta").range(from, to)),
         fetchAllPages<any>((from, to) => supabase.from("cidades").select("id").range(from, to)),
         fetchAllPages<any>((from, to) => supabase.from("atividades").select("id, data").range(from, to)),
-        fetchAllPages<any>((from, to) => supabase.from("glebas").select("id, numero, apelido, cidade_id, data_fechamento").eq("status", "negocio_fechado").gte("data_fechamento", semesterStart.toISOString().split("T")[0]).range(from, to)),
+        fetchAllPages<any>((from, to) => (supabase.from("glebas") as any).select("id, numero, apelido, cidade_id, data_fechamento, vgv_atribuido").eq("status", "negocio_fechado").gte("data_fechamento", semesterStart.toISOString().split("T")[0]).range(from, to)),
         fetchAllPages<any>((from, to) => supabase.from("atividades").select("gleba_id").gte("created_at", subDays(now, 10).toISOString()).range(from, to)),
+        (supabase.from("system_config") as any).select("value").eq("key", "meta_semestre_vgv").maybeSingle(),
       ]);
 
       // Contadores básicos
