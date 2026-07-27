@@ -39,7 +39,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return null;
     }
 
-    const row = data as { nivel: AppRole; ativo: boolean } | null;
+    const row = data as unknown as { nivel: AppRole; ativo: boolean } | null;
     if (!row || !row.ativo) return null;
     return row.nivel;
   };
