@@ -213,7 +213,6 @@ function buildGlebasKml(glebas: Gleba[], appUrl: string): string {
   <NetworkLinkControl>
     <minRefreshPeriod>60</minRefreshPeriod>
     <maxSessionLength>-1</maxSessionLength>
-    <message>Glebas atualizadas em ${new Date().toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })}</message>
     <linkName>Glebas - Young Empreendimentos</linkName>
   </NetworkLinkControl>
   <Document>
@@ -234,7 +233,6 @@ function buildPesquisaKml(terrenos: PesquisaTerreno[]): string {
   <NetworkLinkControl>
     <minRefreshPeriod>60</minRefreshPeriod>
     <maxSessionLength>-1</maxSessionLength>
-    <message>Pesquisa de mercado atualizada em ${new Date().toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })}</message>
     <linkName>Pesquisa de Mercado - Young Empreendimentos</linkName>
   </NetworkLinkControl>
   <Document>
@@ -262,7 +260,6 @@ function buildAllKml(glebas: Gleba[], terrenos: PesquisaTerreno[], appUrl: strin
   <NetworkLinkControl>
     <minRefreshPeriod>60</minRefreshPeriod>
     <maxSessionLength>-1</maxSessionLength>
-    <message>Dados atualizados em ${new Date().toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })}</message>
     <linkName>Perdigueiro - Young Empreendimentos</linkName>
   </NetworkLinkControl>
   <Document>
@@ -338,8 +335,7 @@ Deno.serve(async (req) => {
       <flyToView>0</flyToView>
       <Link>
         <href>${escapeXml(dataUrl.toString())}</href>
-        <refreshMode>onInterval</refreshMode>
-        <refreshInterval>60</refreshInterval>
+        <refreshMode>onChange</refreshMode>
         <viewRefreshMode>never</viewRefreshMode>
       </Link>
     </NetworkLink>
