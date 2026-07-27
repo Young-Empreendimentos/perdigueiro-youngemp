@@ -101,34 +101,35 @@ export async function exportGlebaToPdf(gleba: Gleba) {
   y = 90;
   doc.setTextColor(0, 0, 0);
 
-  // Cover image
+  // Cover image (robust: handles CORS, webp, and format normalization via canvas)
   const imagemCapa = (gleba as any).imagem_capa as string | null;
   if (imagemCapa) {
     try {
-      const resp = await fetch(imagemCapa);
-      const blob = await resp.blob();
-      const dataUrl: string = await new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onloadend = () => resolve(reader.result as string);
-        reader.onerror = reject;
-        reader.readAsDataURL(blob);
-      });
       const img = await new Promise<HTMLImageElement>((resolve, reject) => {
         const im = new Image();
+        im.crossOrigin = "anonymous";
         im.onload = () => resolve(im);
         im.onerror = reject;
-        im.src = dataUrl;
+        // cache-bust to avoid tainted cache without CORS headers
+        im.src = imagemCapa + (imagemCapa.includes("?") ? "&" : "?") + "pdf=1";
       });
+      const canvas = document.createElement("canvas");
+      canvas.width = img.naturalWidth;
+      canvas.height = img.naturalHeight;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) throw new Error("canvas ctx null");
+      ctx.drawImage(img, 0, 0);
+      const jpegDataUrl = canvas.toDataURL("image/jpeg", 0.85);
       const maxW = pageWidth - marginX * 2;
       const maxH = 220;
-      const ratio = Math.min(maxW / img.width, maxH / img.height);
-      const w = img.width * ratio;
-      const h = img.height * ratio;
-      const fmt = dataUrl.includes("image/png") ? "PNG" : "JPEG";
-      doc.addImage(dataUrl, fmt, marginX + (maxW - w) / 2, y, w, h);
+      const ratio = Math.min(maxW / img.naturalWidth, maxH / img.naturalHeight);
+      const w = img.naturalWidth * ratio;
+      const h = img.naturalHeight * ratio;
+      doc.addImage(jpegDataUrl, "JPEG", marginX + (maxW - w) / 2, y, w, h);
       y += h + 16;
     } catch (e) {
-      console.warn("Falha ao carregar imagem de capa", e);
+      console.warn("Falha ao carregar imagem de capa (seguindo sem imagem)", e);
+      y += 10;
     }
   } else {
     y += 10;
