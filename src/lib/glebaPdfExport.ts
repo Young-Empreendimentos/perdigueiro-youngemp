@@ -98,8 +98,41 @@ export async function exportGlebaToPdf(gleba: Gleba) {
     .join("  •  ");
   doc.text(subtitle, marginX, 58);
 
-  y = 100;
+  y = 90;
   doc.setTextColor(0, 0, 0);
+
+  // Cover image
+  const imagemCapa = (gleba as any).imagem_capa as string | null;
+  if (imagemCapa) {
+    try {
+      const resp = await fetch(imagemCapa);
+      const blob = await resp.blob();
+      const dataUrl: string = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      });
+      const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+        const im = new Image();
+        im.onload = () => resolve(im);
+        im.onerror = reject;
+        im.src = dataUrl;
+      });
+      const maxW = pageWidth - marginX * 2;
+      const maxH = 220;
+      const ratio = Math.min(maxW / img.width, maxH / img.height);
+      const w = img.width * ratio;
+      const h = img.height * ratio;
+      const fmt = dataUrl.includes("image/png") ? "PNG" : "JPEG";
+      doc.addImage(dataUrl, fmt, marginX + (maxW - w) / 2, y, w, h);
+      y += h + 16;
+    } catch (e) {
+      console.warn("Falha ao carregar imagem de capa", e);
+    }
+  } else {
+    y += 10;
+  }
 
   const section = (title: string) => {
     if (y > 760) {

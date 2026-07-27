@@ -2600,45 +2600,6 @@ export type Database = {
         }
         Relationships: []
       }
-      comissoes_usuarios_corretores: {
-        Row: {
-          ativo: boolean | null
-          atualizado_em: string | null
-          cpf_cnpj: string
-          criado_em: string | null
-          email: string
-          id: number
-          nome: string
-          senha_hash: string
-          sienge_id: string | null
-          ultimo_login: string | null
-        }
-        Insert: {
-          ativo?: boolean | null
-          atualizado_em?: string | null
-          cpf_cnpj: string
-          criado_em?: string | null
-          email: string
-          id?: number
-          nome: string
-          senha_hash: string
-          sienge_id?: string | null
-          ultimo_login?: string | null
-        }
-        Update: {
-          ativo?: boolean | null
-          atualizado_em?: string | null
-          cpf_cnpj?: string
-          criado_em?: string | null
-          email?: string
-          id?: number
-          nome?: string
-          senha_hash?: string
-          sienge_id?: string | null
-          ultimo_login?: string | null
-        }
-        Relationships: []
-      }
       comissoes_valor_pago_manual: {
         Row: {
           atualizado_em: string | null
@@ -9641,60 +9602,6 @@ export type Database = {
             foreignKeyName: "fk_contrato"
             columns: ["contrato_id"]
             isOneToOne: false
-            referencedRelation: "sienge_contratos_de_vendas"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      sienge_contrato_comissoes: {
-        Row: {
-          contrato_id: number
-          total_commission: number
-          total_commission_amount: number
-        }
-        Insert: {
-          contrato_id: number
-          total_commission: number
-          total_commission_amount: number
-        }
-        Update: {
-          contrato_id?: number
-          total_commission?: number
-          total_commission_amount?: number
-        }
-        Relationships: [
-          {
-            foreignKeyName: "sienge_contrato_comissoes_contrato_id_fkey"
-            columns: ["contrato_id"]
-            isOneToOne: true
-            referencedRelation: "comissoes_sienge_contratos"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "sienge_contrato_comissoes_contrato_id_fkey"
-            columns: ["contrato_id"]
-            isOneToOne: true
-            referencedRelation: "registros_contratos"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "sienge_contrato_comissoes_contrato_id_fkey"
-            columns: ["contrato_id"]
-            isOneToOne: true
-            referencedRelation: "registros_contratos"
-            referencedColumns: ["sienge_contract_id"]
-          },
-          {
-            foreignKeyName: "sienge_contrato_comissoes_contrato_id_fkey"
-            columns: ["contrato_id"]
-            isOneToOne: true
-            referencedRelation: "registros_mv_valor_pago"
-            referencedColumns: ["sienge_contract_id"]
-          },
-          {
-            foreignKeyName: "sienge_contrato_comissoes_contrato_id_fkey"
-            columns: ["contrato_id"]
-            isOneToOne: true
             referencedRelation: "sienge_contratos_de_vendas"
             referencedColumns: ["id"]
           },
