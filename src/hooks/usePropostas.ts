@@ -69,6 +69,9 @@ export function usePropostas() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["propostas"] });
+      // O trigger do banco move a gleba para "proposta_enviada"; recarrega as glebas
+      // para o card pular de coluna na hora.
+      queryClient.invalidateQueries({ queryKey: ["glebas"] });
     },
   });
 
