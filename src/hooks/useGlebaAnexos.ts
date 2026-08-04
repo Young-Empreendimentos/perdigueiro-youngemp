@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase, perdigueiroDb } from "@/integrations/supabase/client";
 
 interface GlebaAnexo {
   id: string;
@@ -19,7 +19,7 @@ export function useGlebaAnexos(glebaId: string | null) {
     queryKey: ["gleba_anexos", glebaId],
     queryFn: async () => {
       if (!glebaId) return [];
-      const { data, error } = await supabase
+      const { data, error } = await perdigueiroDb
         .from("gleba_anexos")
         .select("*")
         .eq("gleba_id", glebaId)
@@ -40,7 +40,7 @@ export function useGlebaAnexos(glebaId: string | null) {
         .upload(fileName, file);
       if (uploadError) throw uploadError;
 
-      const { error: insertError } = await supabase
+      const { error: insertError } = await perdigueiroDb
         .from("gleba_anexos")
         .insert({
           gleba_id: gId,
@@ -57,7 +57,7 @@ export function useGlebaAnexos(glebaId: string | null) {
 
   const addDriveLink = useMutation({
     mutationFn: async ({ link, tipo, glebaId: gId, nome }: { link: string; tipo: string; glebaId: string; nome: string }) => {
-      const { error } = await supabase
+      const { error } = await perdigueiroDb
         .from("gleba_anexos")
         .insert({
           gleba_id: gId,
@@ -77,7 +77,7 @@ export function useGlebaAnexos(glebaId: string | null) {
       if (!anexo.arquivo.startsWith("http")) {
         await supabase.storage.from("gleba-anexos").remove([anexo.arquivo]);
       }
-      const { error } = await supabase.from("gleba_anexos").delete().eq("id", anexo.id);
+      const { error } = await perdigueiroDb.from("gleba_anexos").delete().eq("id", anexo.id);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -87,7 +87,7 @@ export function useGlebaAnexos(glebaId: string | null) {
 
   const updateAnexoTipo = useMutation({
     mutationFn: async ({ anexoId, tipoArquivoId }: { anexoId: string; tipoArquivoId: string | null }) => {
-      const { error } = await supabase
+      const { error } = await perdigueiroDb
         .from("gleba_anexos")
         .update({ tipo_arquivo_id: tipoArquivoId } as any)
         .eq("id", anexoId);

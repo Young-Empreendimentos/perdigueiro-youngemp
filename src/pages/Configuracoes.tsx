@@ -48,7 +48,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase, perdigueiroDb } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { ReportConfigCard } from "@/components/configuracoes/ReportConfigCard";
@@ -86,7 +86,7 @@ export default function Configuracoes() {
   const { data: membros, isLoading } = useQuery({
     queryKey: ["perdigueiro-membros"],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await perdigueiroDb
         .from("perdigueiro_membros" as any)
         .select("id, user_id, nome, email, ativo, nivel, created_at")
         .eq("ativo", true)
@@ -123,7 +123,7 @@ export default function Configuracoes() {
     mutationFn: async (userId: string) => {
       const u = (portalUsers || []).find((x) => x.id === userId);
       // upsert: se a pessoa já tem linha (ex.: estava desativada), reativa; senão, cria.
-      const { error, count } = await supabase
+      const { error, count } = await perdigueiroDb
         .from("perdigueiro_membros" as any)
         .upsert(
           { user_id: userId, nome: u?.nome ?? null, email: u?.email ?? null, nivel: newMemberNivel, ativo: true },
@@ -151,7 +151,7 @@ export default function Configuracoes() {
   // NÃO toca no login do portal — ela continua nos outros sistemas.
   const removeMember = useMutation({
     mutationFn: async (id: string) => {
-      const { error, count } = await supabase
+      const { error, count } = await perdigueiroDb
         .from("perdigueiro_membros" as any)
         .update({ ativo: false }, { count: "exact" })
         .eq("id", id);
@@ -172,7 +172,7 @@ export default function Configuracoes() {
   // Muda o nível (admin/usuário) de um membro — grava só na tabela nova.
   const updateNivel = useMutation({
     mutationFn: async ({ id, nivel }: { id: string; nivel: "admin" | "user" }) => {
-      const { error, count } = await supabase
+      const { error, count } = await perdigueiroDb
         .from("perdigueiro_membros" as any)
         .update({ nivel }, { count: "exact" })
         .eq("id", id);
@@ -548,7 +548,7 @@ function ReprocessKmzCard() {
   const { data: pendingGlebas, isLoading } = useQuery({
     queryKey: ["glebas-sem-poligono"],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await perdigueiroDb
         .from("glebas")
         .select("id, apelido, arquivo_kmz")
         .not("arquivo_kmz", "is", null)
@@ -578,7 +578,7 @@ function ReprocessKmzCard() {
         if (error) throw error;
 
         if (data?.success && data.geojson) {
-          const { error: updateError } = await supabase
+          const { error: updateError } = await perdigueiroDb
             .from("glebas")
             .update({ poligono_geojson: data.geojson } as any)
             .eq("id", gleba.id);
@@ -663,7 +663,7 @@ function MetaVgvCard() {
   const { data: meta, isLoading } = useQuery({
     queryKey: ["system_config", "meta_semestre_vgv"],
     queryFn: async () => {
-      const { data, error } = await (supabase.from("system_config") as any)
+      const { data, error } = await (perdigueiroDb.from("system_config") as any)
         .select("value")
         .eq("key", "meta_semestre_vgv")
         .maybeSingle();
@@ -675,7 +675,7 @@ function MetaVgvCard() {
 
   const saveMeta = useMutation({
     mutationFn: async (value: number) => {
-      const { error } = await (supabase.from("system_config") as any).upsert(
+      const { error } = await (perdigueiroDb.from("system_config") as any).upsert(
         { key: "meta_semestre_vgv", value: String(value) },
         { onConflict: "key" }
       );

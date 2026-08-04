@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase, perdigueiroDb } from "@/integrations/supabase/client";
 import { Tables, TablesInsert } from "@/integrations/supabase/types";
 import { assertAfetou } from "@/lib/db";
 
@@ -12,7 +12,7 @@ export function useAtividades() {
   const { data: atividades = [], isLoading } = useQuery({
     queryKey: ["atividades"],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await perdigueiroDb
         .from("atividades")
         .select(`
           *,
@@ -28,7 +28,7 @@ export function useAtividades() {
 
   const createAtividade = useMutation({
     mutationFn: async (data: AtividadeInsert) => {
-      const { error, count } = await supabase
+      const { error, count } = await perdigueiroDb
         .from("atividades")
         .insert([data], { count: "exact" });
       if (error) throw error;
@@ -41,7 +41,7 @@ export function useAtividades() {
 
   const updateAtividade = useMutation({
     mutationFn: async ({ id, ...data }: Partial<Atividade> & { id: string }) => {
-      const { error, count } = await supabase
+      const { error, count } = await perdigueiroDb
         .from("atividades")
         .update(data, { count: "exact" })
         .eq("id", id);
@@ -58,7 +58,7 @@ export function useAtividades() {
 
   const deleteAtividade = useMutation({
     mutationFn: async (id: string) => {
-      const { error, count } = await supabase
+      const { error, count } = await perdigueiroDb
         .from("atividades")
         .delete({ count: "exact" })
         .eq("id", id);
@@ -88,7 +88,7 @@ export function useAtividadesByGleba(glebaId: string | null) {
     queryFn: async () => {
       if (!glebaId) return [];
       
-      const { data, error } = await supabase
+      const { data, error } = await perdigueiroDb
         .from("atividades")
         .select("*")
         .eq("gleba_id", glebaId)

@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase, perdigueiroDb } from "@/integrations/supabase/client";
 import { startOfMonth, endOfMonth, subMonths, format, startOfWeek, endOfWeek, eachDayOfInterval, eachMonthOfInterval, subDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { validateGlebaStatus } from "@/lib/glebaValidation";
@@ -87,13 +87,13 @@ export function useDashboardStats() {
 
       // Buscar dados em páginas de 1000 linhas para não cair no limite padrão do Supabase/PostgREST
       const [glebas, propostas, cidades, atividades, negociosSemestre, recentAtividades, metaConfig] = await Promise.all([
-        fetchAllPages<any>((from, to) => supabase.from("glebas").select("id, status, prioridade, numero, apelido, cidade_id, tamanho_m2, preco, data_visita, arquivo_protocolo, motivo_descarte_id, arquivo_contrato, data_fechamento, standby_motivo").range(from, to)),
-        fetchAllPages<any>((from, to) => supabase.from("propostas").select("id, data_proposta").range(from, to)),
-        fetchAllPages<any>((from, to) => supabase.from("cidades").select("id").range(from, to)),
-        fetchAllPages<any>((from, to) => supabase.from("atividades").select("id, data").range(from, to)),
-        fetchAllPages<any>((from, to) => (supabase.from("glebas") as any).select("id, numero, apelido, cidade_id, data_fechamento, vgv_atribuido").eq("status", "negocio_fechado").gte("data_fechamento", semesterStart.toISOString().split("T")[0]).range(from, to)),
-        fetchAllPages<any>((from, to) => supabase.from("atividades").select("gleba_id").gte("created_at", subDays(now, 10).toISOString()).range(from, to)),
-        (supabase.from("system_config") as any).select("value").eq("key", "meta_semestre_vgv").maybeSingle(),
+        fetchAllPages<any>((from, to) => perdigueiroDb.from("glebas").select("id, status, prioridade, numero, apelido, cidade_id, tamanho_m2, preco, data_visita, arquivo_protocolo, motivo_descarte_id, arquivo_contrato, data_fechamento, standby_motivo").range(from, to)),
+        fetchAllPages<any>((from, to) => perdigueiroDb.from("propostas").select("id, data_proposta").range(from, to)),
+        fetchAllPages<any>((from, to) => perdigueiroDb.from("cidades").select("id").range(from, to)),
+        fetchAllPages<any>((from, to) => perdigueiroDb.from("atividades").select("id, data").range(from, to)),
+        fetchAllPages<any>((from, to) => (perdigueiroDb.from("glebas") as any).select("id, numero, apelido, cidade_id, data_fechamento, vgv_atribuido").eq("status", "negocio_fechado").gte("data_fechamento", semesterStart.toISOString().split("T")[0]).range(from, to)),
+        fetchAllPages<any>((from, to) => perdigueiroDb.from("atividades").select("gleba_id").gte("created_at", subDays(now, 10).toISOString()).range(from, to)),
+        (perdigueiroDb.from("system_config") as any).select("value").eq("key", "meta_semestre_vgv").maybeSingle(),
       ]);
 
       // Contadores básicos

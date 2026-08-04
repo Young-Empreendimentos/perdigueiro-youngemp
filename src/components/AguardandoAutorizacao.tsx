@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase, perdigueiroDb } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Clock, LogOut } from "lucide-react";
 
@@ -21,7 +21,7 @@ export function AguardandoAutorizacao() {
     if (sessionStorage.getItem(chave)) return;
     sessionStorage.setItem(chave, "1");
 
-    supabase
+    perdigueiroDb
       .from("perdigueiro_tentativas_acesso" as any)
       .insert({
         user_id: user.id,

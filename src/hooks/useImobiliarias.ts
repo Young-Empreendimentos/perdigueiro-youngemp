@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase, perdigueiroDb } from "@/integrations/supabase/client";
 import { Tables, TablesInsert } from "@/integrations/supabase/types";
 import { assertAfetou } from "@/lib/db";
 
@@ -12,7 +12,7 @@ export function useImobiliarias() {
   const { data: imobiliarias = [], isLoading } = useQuery({
     queryKey: ["imobiliarias"],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await perdigueiroDb
         .from("imobiliarias")
         .select("*")
         .eq("ativo", true)
@@ -27,7 +27,7 @@ export function useImobiliarias() {
   const { data: glebaCounts = {} } = useQuery({
     queryKey: ["imobiliarias-gleba-counts"],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await perdigueiroDb
         .from("glebas")
         .select("imobiliaria_id");
 
@@ -45,7 +45,7 @@ export function useImobiliarias() {
 
   const createImobiliaria = useMutation({
     mutationFn: async (data: ImobiliariaInsert) => {
-      const { error, count } = await supabase
+      const { error, count } = await perdigueiroDb
         .from("imobiliarias")
         .insert([{ ...data, ativo: true }], { count: "exact" });
       if (error) throw error;
@@ -58,7 +58,7 @@ export function useImobiliarias() {
 
   const updateImobiliaria = useMutation({
     mutationFn: async ({ id, ...data }: Partial<Imobiliaria> & { id: string }) => {
-      const { error, count } = await supabase
+      const { error, count } = await perdigueiroDb
         .from("imobiliarias")
         .update(data, { count: "exact" })
         .eq("id", id);
@@ -75,7 +75,7 @@ export function useImobiliarias() {
 
   const deleteImobiliaria = useMutation({
     mutationFn: async (id: string) => {
-      const { error, count } = await supabase
+      const { error, count } = await perdigueiroDb
         .from("imobiliarias")
         .delete({ count: "exact" })
         .eq("id", id);

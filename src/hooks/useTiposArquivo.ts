@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase, perdigueiroDb } from "@/integrations/supabase/client";
 
 export interface TipoArquivo {
   id: string;
@@ -13,7 +13,7 @@ export function useTiposArquivo() {
   const { data: tiposArquivo = [], isLoading } = useQuery({
     queryKey: ["tipos_arquivo"],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await perdigueiroDb
         .from("tipos_arquivo")
         .select("*")
         .order("nome");
@@ -24,7 +24,7 @@ export function useTiposArquivo() {
 
   const createTipo = useMutation({
     mutationFn: async (nome: string) => {
-      const { error } = await supabase.from("tipos_arquivo").insert({ nome });
+      const { error } = await perdigueiroDb.from("tipos_arquivo").insert({ nome });
       if (error) throw error;
     },
     onSuccess: () => {
@@ -34,7 +34,7 @@ export function useTiposArquivo() {
 
   const updateTipo = useMutation({
     mutationFn: async ({ id, nome }: { id: string; nome: string }) => {
-      const { error } = await supabase.from("tipos_arquivo").update({ nome }).eq("id", id);
+      const { error } = await perdigueiroDb.from("tipos_arquivo").update({ nome }).eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -44,7 +44,7 @@ export function useTiposArquivo() {
 
   const deleteTipo = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from("tipos_arquivo").delete().eq("id", id);
+      const { error } = await perdigueiroDb.from("tipos_arquivo").delete().eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => {

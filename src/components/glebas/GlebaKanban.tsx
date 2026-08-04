@@ -25,7 +25,7 @@ import { Loader2, ChevronLeft, ChevronRight, Search, Star, ChevronsLeft, Chevron
 import { StatusDescriptionDialog } from "./StatusDescriptionDialog";
 import { cn } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase, perdigueiroDb } from "@/integrations/supabase/client";
 import confetti from "canvas-confetti";
 import { validateGlebaStatus } from "@/lib/glebaValidation";
 import {
@@ -209,7 +209,7 @@ export function GlebaKanban({ onViewGleba }: GlebaKanbanProps) {
     queryFn: async () => {
       const tenDaysAgo = new Date();
       tenDaysAgo.setDate(tenDaysAgo.getDate() - 10);
-      const { data, error } = await supabase
+      const { data, error } = await perdigueiroDb
         .from("atividades")
         .select("gleba_id")
         .gte("created_at", tenDaysAgo.toISOString());

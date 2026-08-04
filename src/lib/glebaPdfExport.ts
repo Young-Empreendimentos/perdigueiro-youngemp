@@ -2,7 +2,7 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase, perdigueiroDb } from "@/integrations/supabase/client";
 import { Tables } from "@/integrations/supabase/types";
 import { STATUS_LABELS } from "@/hooks/useGlebas";
 
@@ -37,25 +37,25 @@ export async function exportGlebaToPdf(gleba: Gleba) {
     profilesRes,
   ] = await Promise.all([
     gleba.cidade_id
-      ? supabase.from("cidades").select("nome, uf").eq("id", gleba.cidade_id).maybeSingle()
+      ? perdigueiroDb.from("cidades").select("nome, uf").eq("id", gleba.cidade_id).maybeSingle()
       : Promise.resolve({ data: null } as any),
     gleba.imobiliaria_id
-      ? supabase.from("imobiliarias").select("nome").eq("id", gleba.imobiliaria_id).maybeSingle()
+      ? perdigueiroDb.from("imobiliarias").select("nome").eq("id", gleba.imobiliaria_id).maybeSingle()
       : Promise.resolve({ data: null } as any),
     (gleba as any).motivo_descarte_id
-      ? supabase.from("motivos_descarte").select("nome").eq("id", (gleba as any).motivo_descarte_id).maybeSingle()
+      ? perdigueiroDb.from("motivos_descarte").select("nome").eq("id", (gleba as any).motivo_descarte_id).maybeSingle()
       : Promise.resolve({ data: null } as any),
-    supabase
+    perdigueiroDb
       .from("atividades")
       .select("id, data, descricao, responsavel_id, created_at, tipo_atividade:tipos_atividade(nome)")
       .eq("gleba_id", gleba.id)
       .order("data", { ascending: false }),
-    supabase
+    perdigueiroDb
       .from("propostas")
       .select("*")
       .eq("gleba_id", gleba.id)
       .order("data_proposta", { ascending: false }),
-    supabase
+    perdigueiroDb
       .from("gleba_anexos")
       .select("nome_arquivo, arquivo, created_at, tipo_arquivo:tipos_arquivo(nome)")
       .eq("gleba_id", gleba.id)

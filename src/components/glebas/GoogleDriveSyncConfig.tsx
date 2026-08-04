@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase, perdigueiroDb } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { RefreshCw, Settings, CheckCircle, AlertCircle, Clock } from "lucide-react";
 
@@ -29,7 +29,7 @@ export function GoogleDriveSyncConfig() {
   }, []);
 
   const loadConfig = async () => {
-    const { data } = await supabase
+    const { data } = await perdigueiroDb
       .from("system_config")
       .select("value")
       .eq("key", "google_drive_kml_file_id")
@@ -42,7 +42,7 @@ export function GoogleDriveSyncConfig() {
   };
 
   const loadLastSync = async () => {
-    const { data } = await supabase
+    const { data } = await perdigueiroDb
       .from("glebas")
       .select("last_sync_at")
       .not("last_sync_at", "is", null)
@@ -64,7 +64,7 @@ export function GoogleDriveSyncConfig() {
     setIsSaving(true);
     try {
       // Upsert na configuração
-      const { error } = await supabase
+      const { error } = await perdigueiroDb
         .from("system_config")
         .upsert(
           {

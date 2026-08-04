@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 import { User, Session } from "@supabase/supabase-js";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase, perdigueiroDb } from "@/integrations/supabase/client";
 
 type AppRole = "admin" | "user";
 
@@ -28,7 +28,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Fonte única de verdade do Perdigueiro: a tabela perdigueiro_membros.
   // Retorna o nível (admin/user) se a pessoa for membro ATIVO; senão null (não é membro).
   const fetchMembership = async (userId: string): Promise<AppRole | null> => {
-    const { data, error } = await supabase
+    const { data, error } = await perdigueiroDb
       .from("perdigueiro_membros" as any)
       .select("nivel, ativo")
       .eq("user_id", userId)

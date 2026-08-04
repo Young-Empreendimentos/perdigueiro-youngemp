@@ -13,7 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { STATUS_LABELS, STATUS_ORDER, useGlebas } from "@/hooks/useGlebas";
 import { useCidades } from "@/hooks/useCidades";
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase, perdigueiroDb } from "@/integrations/supabase/client";
 import {
   Select,
   SelectContent,
@@ -83,7 +83,7 @@ export function GlebaDetailsDialog({
   const { data: imobiliarias } = useQuery({
     queryKey: ["imobiliarias"],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await perdigueiroDb
         .from("imobiliarias")
         .select("id, nome")
         .eq("ativo", true)
@@ -96,7 +96,7 @@ export function GlebaDetailsDialog({
   const { data: motivosDescarte } = useQuery({
     queryKey: ["motivos_descarte"],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await perdigueiroDb
         .from("motivos_descarte")
         .select("id, nome");
       if (error) throw error;
@@ -108,7 +108,7 @@ export function GlebaDetailsDialog({
     queryKey: ["propostas", "gleba", gleba?.id],
     queryFn: async () => {
       if (!gleba?.id) return [];
-      const { data, error } = await supabase
+      const { data, error } = await perdigueiroDb
         .from("propostas")
         .select("*")
         .eq("gleba_id", gleba.id)

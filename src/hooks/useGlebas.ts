@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase, perdigueiroDb } from "@/integrations/supabase/client";
 import { Tables } from "@/integrations/supabase/types";
 
 type Gleba = Tables<"glebas">;
@@ -36,7 +36,7 @@ export function useGlebas() {
   const { data: glebas = [], isLoading, refetch } = useQuery({
     queryKey: ["glebas"],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await perdigueiroDb
         .from("glebas")
         .select("*")
         .order("created_at", { ascending: false })
@@ -52,7 +52,7 @@ export function useGlebas() {
     if (newStatus === "negocio_fechado") {
       updateData.data_fechamento = new Date().toISOString().split("T")[0];
     }
-    const { error } = await supabase
+    const { error } = await perdigueiroDb
       .from("glebas")
       .update(updateData)
       .eq("id", glebaId);
@@ -62,13 +62,13 @@ export function useGlebas() {
   };
 
   const createGleba = async (data: Partial<Gleba> & { apelido: string; status: string }) => {
-    const { error } = await supabase.from("glebas").insert([data as any]);
+    const { error } = await perdigueiroDb.from("glebas").insert([data as any]);
     if (error) throw error;
     await refetch();
   };
 
   const updateGleba = async (glebaId: string, data: Partial<Gleba>) => {
-    const { error } = await supabase
+    const { error } = await perdigueiroDb
       .from("glebas")
       .update(data)
       .eq("id", glebaId);
@@ -78,7 +78,7 @@ export function useGlebas() {
   };
 
   const deleteGleba = async (glebaId: string) => {
-    const { error } = await supabase
+    const { error } = await perdigueiroDb
       .from("glebas")
       .delete()
       .eq("id", glebaId);

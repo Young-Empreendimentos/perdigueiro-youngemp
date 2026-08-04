@@ -35,7 +35,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useGlebas, STATUS_LABELS } from "@/hooks/useGlebas";
 import { Tables } from "@/integrations/supabase/types";
 import { Loader2 } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase, perdigueiroDb } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -85,7 +85,7 @@ export function EditGlebaDialog({ gleba, open, onOpenChange }: EditGlebaDialogPr
   const { data: cidades = [] } = useQuery({
     queryKey: ["cidades"],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await perdigueiroDb
         .from("cidades")
         .select("*")
         .order("nome");
@@ -98,7 +98,7 @@ export function EditGlebaDialog({ gleba, open, onOpenChange }: EditGlebaDialogPr
   const { data: imobiliarias = [] } = useQuery({
     queryKey: ["imobiliarias"],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await perdigueiroDb
         .from("imobiliarias")
         .select("*")
         .eq("ativo", true)
@@ -112,7 +112,7 @@ export function EditGlebaDialog({ gleba, open, onOpenChange }: EditGlebaDialogPr
   const { data: motivosDescarte = [] } = useQuery({
     queryKey: ["motivos_descarte"],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await perdigueiroDb
         .from("motivos_descarte")
         .select("*")
         .eq("ativo", true)

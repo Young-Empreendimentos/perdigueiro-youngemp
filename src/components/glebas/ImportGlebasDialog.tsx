@@ -14,7 +14,7 @@ import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Upload, FileSpreadsheet, AlertCircle, CheckCircle2, Loader2, Building2, MapPin, Minimize2, Maximize2, Download } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase, perdigueiroDb } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useGlebas, STATUS_LABELS } from "@/hooks/useGlebas";
 import { useCidades } from "@/hooks/useCidades";
@@ -227,7 +227,7 @@ export function ImportGlebasDialog() {
     
     // Create new cidade
     try {
-      const { data, error } = await supabase
+      const { data, error } = await perdigueiroDb
         .from("cidades")
         .insert({ nome: normalizedName })
         .select("id")
@@ -263,7 +263,7 @@ export function ImportGlebasDialog() {
     
     // Create new imobiliaria
     try {
-      const { data, error } = await supabase
+      const { data, error } = await perdigueiroDb
         .from("imobiliarias")
         .insert({ nome: normalizedName, ativo: true })
         .select("id")
@@ -358,7 +358,7 @@ export function ImportGlebasDialog() {
           insertData.numero = row.numero;
         }
 
-        const { error: insertError } = await supabase.from("glebas").insert(insertData);
+        const { error: insertError } = await perdigueiroDb.from("glebas").insert(insertData);
 
         if (insertError) throw insertError;
 

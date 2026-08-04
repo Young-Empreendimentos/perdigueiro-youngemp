@@ -16,7 +16,7 @@ import { CidadeCard } from "@/components/cidades/CidadeCard";
 import { CreateCidadeDialog } from "@/components/cidades/CreateCidadeDialog";
 import { EditCidadeDialog } from "@/components/cidades/EditCidadeDialog";
 import { NormalizeCidadesDialog } from "@/components/cidades/NormalizeCidadesDialog";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase, perdigueiroDb } from "@/integrations/supabase/client";
 import { buscarPopulacaoMunicipio } from "@/lib/ibgeApi";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
@@ -113,7 +113,7 @@ export default function Cidades() {
         if (!cidade.populacao && populacao) updateData.populacao = populacao;
 
         if (Object.keys(updateData).length > 0) {
-          const { error } = await supabase
+          const { error } = await perdigueiroDb
             .from("cidades")
             .update(updateData)
             .eq("id", cidade.id);

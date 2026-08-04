@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase, perdigueiroDb } from "@/integrations/supabase/client";
 import { Tables, TablesInsert } from "@/integrations/supabase/types";
 import { assertAfetou } from "@/lib/db";
 
@@ -22,7 +22,7 @@ export function usePropostas() {
   const { data: propostas = [], isLoading } = useQuery({
     queryKey: ["propostas"],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await perdigueiroDb
         .from("propostas")
         .select(`
           *,
@@ -41,7 +41,7 @@ export function usePropostas() {
       
       let cidadesMap: Record<string, { id: string; nome: string }> = {};
       if (cidadeIds.length > 0) {
-        const { data: cidades } = await supabase
+        const { data: cidades } = await perdigueiroDb
           .from("cidades")
           .select("id, nome")
           .in("id", cidadeIds);
@@ -61,7 +61,7 @@ export function usePropostas() {
 
   const createProposta = useMutation({
     mutationFn: async (data: PropostaInsert) => {
-      const { error, count } = await supabase
+      const { error, count } = await perdigueiroDb
         .from("propostas")
         .insert([data], { count: "exact" });
       if (error) throw error;
@@ -77,7 +77,7 @@ export function usePropostas() {
 
   const updateProposta = useMutation({
     mutationFn: async ({ id, ...data }: Partial<Proposta> & { id: string }) => {
-      const { error, count } = await supabase
+      const { error, count } = await perdigueiroDb
         .from("propostas")
         .update(data, { count: "exact" })
         .eq("id", id);
@@ -94,7 +94,7 @@ export function usePropostas() {
 
   const deleteProposta = useMutation({
     mutationFn: async (id: string) => {
-      const { error, count } = await supabase
+      const { error, count } = await perdigueiroDb
         .from("propostas")
         .delete({ count: "exact" })
         .eq("id", id);
@@ -156,7 +156,7 @@ export function usePropostasByGleba(glebaId: string | null) {
     queryFn: async () => {
       if (!glebaId) return [];
 
-      const { data, error } = await supabase
+      const { data, error } = await perdigueiroDb
         .from("propostas")
         .select("*")
         .eq("gleba_id", glebaId)

@@ -13,7 +13,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Progress } from "@/components/ui/progress";
 import { useCidades } from "@/hooks/useCidades";
 import { useCidadesBrasil } from "@/hooks/useCidadesBrasil";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase, perdigueiroDb } from "@/integrations/supabase/client";
 import { buscarPopulacaoMunicipio } from "@/lib/ibgeApi";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
@@ -111,7 +111,7 @@ export function NormalizeCidadesDialog() {
             console.warn("Erro ao buscar população:", err);
           }
 
-          const { error } = await supabase
+          const { error } = await perdigueiroDb
             .from("cidades")
             .update({
               nome: match.nomeCompleto,
@@ -140,7 +140,7 @@ export function NormalizeCidadesDialog() {
           console.warn("Erro ao buscar população:", err);
         }
 
-        const { error } = await supabase
+        const { error } = await perdigueiroDb
           .from("cidades")
           .update({
             nome: cidadeIBGE.nomeCompleto,

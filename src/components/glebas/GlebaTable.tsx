@@ -27,7 +27,7 @@ import { Search, X, Star, Check, AlertTriangle, Clock } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase, perdigueiroDb } from "@/integrations/supabase/client";
 import { ColumnSelector, AVAILABLE_COLUMNS } from "./ColumnSelector";
 
 type Gleba = Tables<"glebas">;
@@ -78,7 +78,7 @@ export function GlebaTable({ onViewGleba }: GlebaTableProps) {
   const { data: imobiliarias } = useQuery({
     queryKey: ["imobiliarias"],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await perdigueiroDb
         .from("imobiliarias")
         .select("id, nome")
         .eq("ativo", true)

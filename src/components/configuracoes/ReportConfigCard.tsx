@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase, perdigueiroDb } from "@/integrations/supabase/client";
 import {
   Card, CardContent, CardDescription, CardHeader, CardTitle,
 } from "@/components/ui/card";
@@ -61,7 +61,7 @@ export function ReportConfigCard() {
   const { data: reports, isLoading } = useQuery({
     queryKey: ["report-configs"],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await perdigueiroDb
         .from("report_configs")
         .select("*")
         .order("created_at", { ascending: true });
@@ -81,7 +81,7 @@ export function ReportConfigCard() {
 
   const updateReport = useMutation({
     mutationFn: async ({ id, updates }: { id: string; updates: Partial<ReportConfig> }) => {
-      const { error } = await supabase
+      const { error } = await perdigueiroDb
         .from("report_configs")
         .update(updates as any)
         .eq("id", id);

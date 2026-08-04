@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase, perdigueiroDb } from "@/integrations/supabase/client";
 import { Tables, TablesInsert, TablesUpdate } from "@/integrations/supabase/types";
 import { toast } from "sonner";
 
@@ -13,7 +13,7 @@ export function useCidades() {
   const { data: cidades, isLoading, error } = useQuery({
     queryKey: ["cidades"],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await perdigueiroDb
         .from("cidades")
         .select("*")
         .order("nome", { ascending: true });
@@ -25,7 +25,7 @@ export function useCidades() {
 
   const createCidade = useMutation({
     mutationFn: async (cidade: CidadeInsert) => {
-      const { data, error } = await supabase
+      const { data, error } = await perdigueiroDb
         .from("cidades")
         .insert(cidade)
         .select()
@@ -46,7 +46,7 @@ export function useCidades() {
 
   const updateCidade = useMutation({
     mutationFn: async ({ id, ...updates }: CidadeUpdate & { id: string }) => {
-      const { data, error } = await supabase
+      const { data, error } = await perdigueiroDb
         .from("cidades")
         .update(updates)
         .eq("id", id)
@@ -68,7 +68,7 @@ export function useCidades() {
 
   const deleteCidade = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from("cidades").delete().eq("id", id);
+      const { error } = await perdigueiroDb.from("cidades").delete().eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -125,7 +125,7 @@ export function useCidadeGlebas(cidadeId: string | null) {
     queryFn: async () => {
       if (!cidadeId) return [];
       
-      const { data, error } = await supabase
+      const { data, error } = await perdigueiroDb
         .from("glebas")
         .select("id, apelido, status, tamanho_m2, preco")
         .eq("cidade_id", cidadeId)
@@ -145,7 +145,7 @@ export function useCidadePropostas(cidadeId: string | null) {
       if (!cidadeId) return 0;
       
       // First get all glebas for this city
-      const { data: glebas, error: glebasError } = await supabase
+      const { data: glebas, error: glebasError } = await perdigueiroDb
         .from("glebas")
         .select("id")
         .eq("cidade_id", cidadeId);
@@ -156,7 +156,7 @@ export function useCidadePropostas(cidadeId: string | null) {
       const glebaIds = glebas.map(g => g.id);
 
       // Then count propostas for these glebas
-      const { count, error: propostasError } = await supabase
+      const { count, error: propostasError } = await perdigueiroDb
         .from("propostas")
         .select("id", { count: "exact", head: true })
         .in("gleba_id", glebaIds);

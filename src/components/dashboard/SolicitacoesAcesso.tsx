@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase, perdigueiroDb } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -25,7 +25,7 @@ export function SolicitacoesAcesso() {
   const { data: pendentes } = useQuery({
     queryKey: ["perdigueiro-tentativas"],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await perdigueiroDb
         .from("perdigueiro_tentativas_acesso" as any)
         .select("id, user_id, email, nome, tentou_em")
         .eq("resolvido", false)
@@ -39,14 +39,14 @@ export function SolicitacoesAcesso() {
     mutationFn: async (t: Tentativa) => {
       // upsert: reativa quem já era membro (ex.: estava desativado) preservando o nível;
       // ou cria novo (nível 'user' por padrão). Evita erro de chave duplicada.
-      const { error } = await supabase
+      const { error } = await perdigueiroDb
         .from("perdigueiro_membros" as any)
         .upsert(
           { user_id: t.user_id, nome: t.nome, email: t.email, ativo: true },
           { onConflict: "user_id" }
         );
       if (error) throw error;
-      await supabase
+      await perdigueiroDb
         .from("perdigueiro_tentativas_acesso" as any)
         .delete()
         .eq("id", t.id);
@@ -64,7 +64,7 @@ export function SolicitacoesAcesso() {
 
   const dispensar = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase
+      const { error } = await perdigueiroDb
         .from("perdigueiro_tentativas_acesso" as any)
         .delete()
         .eq("id", id);

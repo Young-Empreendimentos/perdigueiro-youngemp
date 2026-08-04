@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase, perdigueiroDb } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -44,7 +44,7 @@ export function GlebaAtividades({ glebaId }: GlebaAtividadesProps) {
   const { data: atividades = [], isLoading } = useQuery({
     queryKey: ["atividades", "gleba", glebaId],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await perdigueiroDb
         .from("atividades")
         .select("*, tipo_atividade:tipos_atividade(id, nome)")
         .eq("gleba_id", glebaId)
@@ -87,7 +87,7 @@ export function GlebaAtividades({ glebaId }: GlebaAtividadesProps) {
     mutationFn: async ({ descricao, tipoId }: { descricao: string; tipoId: string | null }) => {
       if (!user) throw new Error("Usuário não autenticado");
       
-      const { error } = await supabase.from("atividades").insert({
+      const { error } = await perdigueiroDb.from("atividades").insert({
         descricao,
         gleba_id: glebaId,
         responsavel_id: user.id,
@@ -110,7 +110,7 @@ export function GlebaAtividades({ glebaId }: GlebaAtividadesProps) {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from("atividades").delete().eq("id", id);
+      const { error } = await perdigueiroDb.from("atividades").delete().eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => {

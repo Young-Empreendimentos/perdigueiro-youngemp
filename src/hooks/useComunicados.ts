@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase, perdigueiroDb } from "@/integrations/supabase/client";
 
 interface Comunicado {
   id: string;
@@ -16,7 +16,7 @@ export function useComunicados() {
   const { data: comunicados = [], isLoading } = useQuery({
     queryKey: ["dashboard-comunicados"],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await perdigueiroDb
         .from("dashboard_comunicados")
         .select("*")
         .order("created_at", { ascending: false });
@@ -29,7 +29,7 @@ export function useComunicados() {
     mutationFn: async ({ conteudo, autorNome }: { conteudo: string; autorNome: string }) => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Não autenticado");
-      const { error } = await supabase.from("dashboard_comunicados").insert({
+      const { error } = await perdigueiroDb.from("dashboard_comunicados").insert({
         conteudo,
         autor_id: user.id,
         autor_nome: autorNome,
@@ -41,7 +41,7 @@ export function useComunicados() {
 
   const updateMutation = useMutation({
     mutationFn: async ({ id, conteudo }: { id: string; conteudo: string }) => {
-      const { error } = await supabase
+      const { error } = await perdigueiroDb
         .from("dashboard_comunicados")
         .update({ conteudo, updated_at: new Date().toISOString() })
         .eq("id", id);
@@ -52,7 +52,7 @@ export function useComunicados() {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from("dashboard_comunicados").delete().eq("id", id);
+      const { error } = await perdigueiroDb.from("dashboard_comunicados").delete().eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["dashboard-comunicados"] }),

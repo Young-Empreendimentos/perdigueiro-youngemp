@@ -12,7 +12,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Progress } from "@/components/ui/progress";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase, perdigueiroDb } from "@/integrations/supabase/client";
 import { useGlebas } from "@/hooks/useGlebas";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQueryClient } from "@tanstack/react-query";
@@ -366,7 +366,7 @@ export function ImportPropostasDialog() {
 
         // Check if proposta already exists for this gleba and date
         const dataParsed = parseDate(proposta.dataProposta);
-        const { data: existingProposta } = await supabase
+        const { data: existingProposta } = await perdigueiroDb
           .from("propostas")
           .select("id, arquivo_carta, preco_ha, percentual_proposto, descricao")
           .eq("gleba_id", gleba.id)
@@ -439,7 +439,7 @@ export function ImportPropostasDialog() {
           }
 
           if (Object.keys(updateData).length > 0) {
-            const result = await supabase
+            const result = await perdigueiroDb
               .from("propostas")
               .update(updateData)
               .eq("id", existingProposta.id);
@@ -451,7 +451,7 @@ export function ImportPropostasDialog() {
         } else {
           // Insert new
           propostaData.created_by = user.id;
-          const result = await supabase.from("propostas").insert(propostaData);
+          const result = await perdigueiroDb.from("propostas").insert(propostaData);
           error = result.error;
           action = "Criada";
         }

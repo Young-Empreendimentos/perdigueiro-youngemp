@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase, perdigueiroDb } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -35,7 +35,7 @@ export function StatusDescriptionDialog({
   const { data, isLoading } = useQuery({
     queryKey: ["gleba_status_descricao", status],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await perdigueiroDb
         .from("gleba_status_descricoes")
         .select("descricao")
         .eq("status", status)
@@ -52,7 +52,7 @@ export function StatusDescriptionDialog({
 
   const save = useMutation({
     mutationFn: async () => {
-      const { error } = await supabase
+      const { error } = await perdigueiroDb
         .from("gleba_status_descricoes")
         .upsert({ status, descricao: text, updated_by: (await supabase.auth.getUser()).data.user?.id }, { onConflict: "status" });
       if (error) throw error;

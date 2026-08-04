@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase, perdigueiroDb } from "@/integrations/supabase/client";
 
 export interface TipoAtividade {
   id: string;
@@ -11,7 +11,7 @@ export function useTiposAtividade() {
   const { data: tiposAtividade = [], isLoading } = useQuery({
     queryKey: ["tipos_atividade"],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await perdigueiroDb
         .from("tipos_atividade")
         .select("*")
         .order("nome");

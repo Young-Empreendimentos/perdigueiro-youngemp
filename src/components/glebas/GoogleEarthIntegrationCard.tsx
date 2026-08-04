@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Globe, Copy, ExternalLink, CheckCircle, Key, RefreshCw, Shield } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase, perdigueiroDb } from "@/integrations/supabase/client";
 
 const BASE_URL = "https://vvtympzatclvjaqucebr.supabase.co/functions/v1/serve-kml-network-link";
 
@@ -22,7 +22,7 @@ export function GoogleEarthIntegrationCard() {
   const loadAccessToken = async () => {
     setIsLoading(true);
     try {
-      const { data } = await supabase
+      const { data } = await perdigueiroDb
         .from("system_config")
         .select("value")
         .eq("key", "kml_access_token")
@@ -46,7 +46,7 @@ export function GoogleEarthIntegrationCard() {
       crypto.getRandomValues(array);
       const newToken = Array.from(array, (byte) => byte.toString(16).padStart(2, "0")).join("");
 
-      const { error } = await supabase
+      const { error } = await perdigueiroDb
         .from("system_config")
         .upsert(
           {
