@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Globe, Copy, ExternalLink, CheckCircle, Key, RefreshCw, Shield } from "lucide-react";
+import { Globe, Copy, Download, ExternalLink, CheckCircle, Key, RefreshCw, Shield } from "lucide-react";
 import { supabase, perdigueiroDb } from "@/integrations/supabase/client";
 
 const BASE_URL = "https://vvtympzatclvjaqucebr.supabase.co/functions/v1/serve-kml-network-link";
@@ -14,6 +14,7 @@ export function GoogleEarthIntegrationCard() {
   const [accessToken, setAccessToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [downloadingLayer, setDownloadingLayer] = useState<string | null>(null);
 
   useEffect(() => {
     loadAccessToken();
@@ -90,6 +91,35 @@ export function GoogleEarthIntegrationCard() {
     }
   };
 
+  // Baixa o arquivo .kml (dados reais, ?raw=1) para importar no Google Earth Web.
+  const handleDownload = async (layer: string = "glebas") => {
+    const url = getFullUrl(layer);
+    if (!url) {
+      toast.error("Gere um token de acesso primeiro");
+      return;
+    }
+    setDownloadingLayer(layer);
+    try {
+      const res = await fetch(`${url}&raw=1`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const kml = await res.text();
+      const blob = new Blob([kml], { type: "application/vnd.google-earth.kml+xml" });
+      const href = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = href;
+      a.download = `perdigueiro-${layer}.kml`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(href);
+      toast.success("KML baixado! Importe no Google Earth Web (Projetos → Importar arquivo KML).");
+    } catch (error: any) {
+      toast.error(`Erro ao baixar KML: ${error.message}`);
+    } finally {
+      setDownloadingLayer(null);
+    }
+  };
+
   const handleOpenDocs = () => {
     window.open("https://support.google.com/earth/answer/7365595", "_blank");
   };
@@ -141,7 +171,11 @@ export function GoogleEarthIntegrationCard() {
 
         {/* URLs do Network Link */}
         <div className="space-y-3">
-          <Label>Links de Rede (Network Links)</Label>
+          <Label>Acesso ao Google Earth</Label>
+          <p className="text-xs text-muted-foreground">
+            <strong>Copiar</strong> = link de rede para o <strong>Earth Pro Desktop</strong> (atualiza sozinho).{" "}
+            <strong>Baixar</strong> = arquivo <code>.kml</code> para o <strong>Earth Web</strong> (importar em Projetos → Importar arquivo KML; é estático — baixe de novo para atualizar).
+          </p>
           {[
             { layer: "glebas", label: "Glebas", desc: "Apenas polígonos de glebas" },
             { layer: "pesquisa", label: "Pesquisa de Mercado", desc: "Apenas PINs de pesquisa" },
@@ -165,6 +199,16 @@ export function GoogleEarthIntegrationCard() {
                 disabled={!accessToken}
               >
                 {copiedLayer === layer ? <><CheckCircle className="h-4 w-4" />Copiado!</> : <><Copy className="h-4 w-4" />Copiar</>}
+              </Button>
+              <Button
+                onClick={() => handleDownload(layer)}
+                variant="outline"
+                className="shrink-0 gap-2 mt-5"
+                size="sm"
+                disabled={!accessToken || downloadingLayer === layer}
+                title="Baixar arquivo .kml para importar no Google Earth Web"
+              >
+                {downloadingLayer === layer ? <><RefreshCw className="h-4 w-4 animate-spin" />Baixando...</> : <><Download className="h-4 w-4" />Baixar</>}
               </Button>
             </div>
           ))}
