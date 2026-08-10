@@ -14,6 +14,7 @@ import { STATUS_LABELS, STATUS_ORDER, useGlebas } from "@/hooks/useGlebas";
 import { useCidades } from "@/hooks/useCidades";
 import { useQuery } from "@tanstack/react-query";
 import { supabase, perdigueiroDb } from "@/integrations/supabase/client";
+import { exportarGlebaKml, glebaTemPoligono } from "@/lib/glebaKmlExport";
 import {
   Select,
   SelectContent,
@@ -29,6 +30,7 @@ import {
   Building2,
   Star,
   FileText,
+  Globe,
   Pencil,
   ExternalLink,
   Ruler,
@@ -401,6 +403,22 @@ export function GlebaDetailsDialog({
                 >
                   <FileText className="h-4 w-4" />
                   Exportar PDF
+                </Button>
+                <Button
+                  variant="outline"
+                  disabled={!glebaTemPoligono(gleba)}
+                  title={glebaTemPoligono(gleba) ? "Baixar .kml desta área (p/ Google Earth Web)" : "Esta gleba ainda não tem polígono"}
+                  onClick={() => {
+                    if (exportarGlebaKml(gleba)) {
+                      toast.success("KML desta área baixado! Importe no Google Earth Web.");
+                    } else {
+                      toast.error("Esta gleba não tem polígono para exportar.");
+                    }
+                  }}
+                  className="gap-2"
+                >
+                  <Globe className="h-4 w-4" />
+                  Exportar KML
                 </Button>
                 <Button
                   onClick={() => {
