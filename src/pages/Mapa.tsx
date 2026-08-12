@@ -6,18 +6,19 @@ import { GlebaCard } from "@/components/glebas/GlebaCard";
 import { EditGlebaDialog } from "@/components/glebas/EditGlebaDialog";
 import { Tables } from "@/integrations/supabase/types";
 import { supabase } from "@/integrations/supabase/client";
-import { 
-  Map, 
-  Maximize2, 
-  Minimize2, 
-  Upload, 
-  Layers, 
+import {
+  Map,
+  Maximize2,
+  Minimize2,
+  Upload,
+  Layers,
   Globe,
   Copy,
   Check,
   ExternalLink,
   RefreshCw,
-  CloudDownload
+  CloudDownload,
+  Pencil
 } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
@@ -38,6 +39,21 @@ type Gleba = Tables<"glebas">;
 
 const NETWORK_LINK_URL = "https://vvtympzatclvjaqucebr.supabase.co/functions/v1/serve-kml-network-link";
 const SYNC_FUNCTION_URL = "https://vvtympzatclvjaqucebr.supabase.co/functions/v1/sync-drive-glebas";
+
+// Área (m²) de um polígono lon/lat pela fórmula esférica (excesso). Boa o suficiente
+// para o tamanho de uma gleba; não depende de projeção.
+function polygonAreaM2(coords: number[][]): number {
+  if (!coords || coords.length < 3) return 0;
+  const R = 6378137; // raio da Terra em metros
+  const rad = (d: number) => (d * Math.PI) / 180;
+  let sum = 0;
+  for (let i = 0; i < coords.length; i++) {
+    const [lon1, lat1] = coords[i];
+    const [lon2, lat2] = coords[(i + 1) % coords.length];
+    sum += rad(lon2 - lon1) * (2 + Math.sin(rad(lat1)) + Math.sin(rad(lat2)));
+  }
+  return Math.abs((sum * R * R) / 2);
+}
 
 export default function Mapa() {
   const { glebas, isLoading, createGleba, refetch } = useGlebas();
@@ -61,6 +77,56 @@ export default function Mapa() {
   const [driveFileId, setDriveFileId] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
+
+  // --- Desenhar nova gleba no mapa 3D ---
+  const [isDrawing, setIsDrawing] = useState(false);
+  const [drawnCoords, setDrawnCoords] = useState<number[][] | null>(null);
+  const [drawDialogOpen, setDrawDialogOpen] = useState(false);
+  const [novoApelido, setNovoApelido] = useState("");
+  const [savingDraw, setSavingDraw] = useState(false);
+
+  const areaM2 = drawnCoords ? polygonAreaM2(drawnCoords) : 0;
+
+  const handlePolygonComplete = (coords: number[][]) => {
+    setDrawnCoords(coords);
+    setIsDrawing(false);
+    setNovoApelido("");
+    setDrawDialogOpen(true);
+  };
+
+  const handleSalvarDesenho = async () => {
+    if (!drawnCoords || drawnCoords.length < 3) return;
+    if (!novoApelido.trim()) {
+      toast({ variant: "destructive", title: "Dê um nome à gleba" });
+      return;
+    }
+    setSavingDraw(true);
+    try {
+      const ring = [...drawnCoords, drawnCoords[0]]; // fecha o anel
+      await createGleba({
+        apelido: novoApelido.trim(),
+        status: "identificada",
+        poligono_geojson: { type: "Polygon", coordinates: [ring] },
+        tamanho_m2: Math.round(areaM2),
+      });
+      await refetch();
+      toast({
+        title: "Gleba criada!",
+        description: `"${novoApelido.trim()}" — ${(areaM2 / 10000).toLocaleString("pt-BR", { maximumFractionDigits: 2 })} ha`,
+      });
+      setDrawDialogOpen(false);
+      setDrawnCoords(null);
+      setNovoApelido("");
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Erro ao salvar",
+        description: error instanceof Error ? error.message : "Não foi possível criar a gleba",
+      });
+    } finally {
+      setSavingDraw(false);
+    }
+  };
 
   const handleFileImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -299,6 +365,16 @@ export default function Mapa() {
             </DialogContent>
           </Dialog>
 
+          {/* Desenhar Gleba (no globo 3D da Google) */}
+          <Button
+            variant={isDrawing ? "default" : "outline"}
+            size="sm"
+            onClick={() => setIsDrawing((v) => !v)}
+          >
+            <Pencil className="h-4 w-4 mr-2" />
+            {isDrawing ? "Desenhando..." : "Desenhar Gleba"}
+          </Button>
+
           {/* Importar KMZ */}
           <Button
             variant="outline"
@@ -351,12 +427,15 @@ export default function Mapa() {
           isFullscreen ? "h-full" : "lg:col-span-3"
         )}>
           {!isLoading && (
-            <GlebaMap3D 
-              glebas={glebas} 
+            <GlebaMap3D
+              glebas={glebas}
               pesquisaTerrenos={pesquisaPins}
               onSelectGleba={setSelectedGleba}
               selectedGlebaId={selectedGleba?.id}
               isFullscreen={isFullscreen}
+              isDrawing={isDrawing}
+              onPolygonComplete={handlePolygonComplete}
+              onCancelDraw={() => setIsDrawing(false)}
             />
           )}
         </div>
@@ -442,6 +521,57 @@ export default function Mapa() {
         open={!!editingGleba}
         onOpenChange={(open) => !open && setEditingGleba(null)}
       />
+
+      {/* Dialog: nomear e salvar a gleba desenhada */}
+      <Dialog
+        open={drawDialogOpen}
+        onOpenChange={(open) => {
+          if (!open) {
+            setDrawDialogOpen(false);
+            setDrawnCoords(null);
+          }
+        }}
+      >
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Nova gleba desenhada</DialogTitle>
+            <DialogDescription>
+              Área calculada:{" "}
+              <strong>{(areaM2 / 10000).toLocaleString("pt-BR", { maximumFractionDigits: 2 })} ha</strong>{" "}
+              ({Math.round(areaM2).toLocaleString("pt-BR")} m²)
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="space-y-1">
+              <Label htmlFor="novoApelido">Nome / apelido da gleba</Label>
+              <Input
+                id="novoApelido"
+                value={novoApelido}
+                onChange={(e) => setNovoApelido(e.target.value)}
+                placeholder="Ex: Fazenda São João"
+                autoFocus
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !savingDraw) handleSalvarDesenho();
+                }}
+              />
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setDrawDialogOpen(false);
+                  setDrawnCoords(null);
+                }}
+              >
+                Cancelar
+              </Button>
+              <Button onClick={handleSalvarDesenho} disabled={savingDraw}>
+                {savingDraw ? "Salvando..." : "Criar gleba"}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

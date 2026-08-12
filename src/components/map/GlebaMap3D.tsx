@@ -1,4 +1,5 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
+import type { CSSProperties } from "react";
 import {
   Cartesian3,
   Color,
@@ -12,6 +13,7 @@ import {
   Cartographic,
   Math as CesiumMath,
   ClassificationType,
+  CallbackProperty,
 } from "cesium";
 import "cesium/Build/Cesium/Widgets/widgets.css";
 import { Tables } from "@/integrations/supabase/types";
@@ -72,6 +74,12 @@ interface GlebaMap3DProps {
   onSelectGleba?: (gleba: Gleba) => void;
   selectedGlebaId?: string | null;
   isFullscreen?: boolean;
+  /** Modo de desenho de nova gleba ligado/desligado */
+  isDrawing?: boolean;
+  /** Chamado quando o usuário conclui o desenho (>=3 pontos), com [lon,lat][] em graus */
+  onPolygonComplete?: (coords: number[][]) => void;
+  /** Chamado quando o usuário cancela o desenho */
+  onCancelDraw?: () => void;
 }
 
 // Converte GeoJSON para array de Cartesian3
@@ -147,11 +155,21 @@ export function GlebaMap3D({
   pesquisaTerrenos = [],
   onSelectGleba,
   selectedGlebaId,
+  isDrawing = false,
+  onPolygonComplete,
+  onCancelDraw,
 }: GlebaMap3DProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const viewerRef = useRef<Viewer | null>(null);
   const tilesetRef = useRef<Cesium3DTileset | null>(null);
   const handlerRef = useRef<ScreenSpaceEventHandler | null>(null);
+
+  // --- Estado do desenho de nova gleba ---
+  const drawPositionsRef = useRef<Cartesian3[]>([]);
+  const drawPointEntitiesRef = useRef<any[]>([]);
+  const drawPolygonEntityRef = useRef<any>(null);
+  const drawHandlerRef = useRef<ScreenSpaceEventHandler | null>(null);
+  const [pointCount, setPointCount] = useState(0);
 
   // Inicializar o viewer
   useEffect(() => {
@@ -294,10 +312,10 @@ export function GlebaMap3D({
     }
   }, [glebas, pesquisaTerrenos]);
 
-  // Handler de clique
+  // Handler de clique (seleção) — desativado durante o desenho
   useEffect(() => {
     const viewer = viewerRef.current;
-    if (!viewer || !onSelectGleba) return;
+    if (!viewer || !onSelectGleba || isDrawing) return;
 
     if (handlerRef.current) {
       handlerRef.current.destroy();
@@ -323,7 +341,7 @@ export function GlebaMap3D({
         handlerRef.current = null;
       }
     };
-  }, [glebas, onSelectGleba]);
+  }, [glebas, onSelectGleba, isDrawing]);
 
   // FlyTo quando uma gleba é selecionada
   useEffect(() => {
@@ -342,11 +360,155 @@ export function GlebaMap3D({
     });
   }, [selectedGlebaId, glebas]);
 
+  // Pega o ponto 3D (na malha do Google) a partir do pixel clicado
+  const pickCartesian = (position: any): Cartesian3 | undefined => {
+    const viewer = viewerRef.current;
+    if (!viewer) return undefined;
+    const scene = viewer.scene;
+    try {
+      if (scene.pickPositionSupported) {
+        const c = scene.pickPosition(position);
+        if (defined(c)) return c;
+      }
+    } catch {
+      /* segue para os fallbacks */
+    }
+    const ray = viewer.camera.getPickRay(position);
+    if (ray) {
+      const g = scene.globe.pick(ray, scene);
+      if (defined(g)) return g;
+    }
+    return viewer.camera.pickEllipsoid(position) || undefined;
+  };
+
+  // Modo de desenho: liga/desliga o handler e o polígono dinâmico
+  useEffect(() => {
+    const viewer = viewerRef.current;
+    if (!viewer) return;
+
+    const clearDraw = () => {
+      drawPointEntitiesRef.current.forEach((e) => { try { viewer.entities.remove(e); } catch { /* noop */ } });
+      drawPointEntitiesRef.current = [];
+      if (drawPolygonEntityRef.current) {
+        try { viewer.entities.remove(drawPolygonEntityRef.current); } catch { /* noop */ }
+        drawPolygonEntityRef.current = null;
+      }
+      drawPositionsRef.current = [];
+      setPointCount(0);
+    };
+
+    if (!isDrawing) {
+      clearDraw();
+      return;
+    }
+
+    // Polígono dinâmico que segue os pontos clicados
+    drawPolygonEntityRef.current = viewer.entities.add({
+      polygon: {
+        hierarchy: new CallbackProperty(
+          () => new PolygonHierarchy(drawPositionsRef.current.slice()),
+          false
+        ) as any,
+        material: Color.YELLOW.withAlpha(0.4),
+        outline: true,
+        outlineColor: Color.YELLOW,
+        classificationType: ClassificationType.CESIUM_3D_TILE,
+      },
+    });
+
+    const handler = new ScreenSpaceEventHandler(viewer.scene.canvas);
+    handler.setInputAction((click: any) => {
+      const pos = pickCartesian(click.position);
+      if (!pos) return;
+      drawPositionsRef.current.push(pos);
+      const pt = viewer.entities.add({
+        position: pos,
+        point: {
+          pixelSize: 9,
+          color: Color.YELLOW,
+          outlineColor: Color.BLACK,
+          outlineWidth: 1,
+          disableDepthTestDistance: Number.POSITIVE_INFINITY,
+        },
+      });
+      drawPointEntitiesRef.current.push(pt);
+      setPointCount(drawPositionsRef.current.length);
+    }, ScreenSpaceEventType.LEFT_CLICK);
+    // Neutraliza o duplo-clique (que daria zoom) durante o desenho
+    handler.setInputAction(() => { /* noop */ }, ScreenSpaceEventType.LEFT_DOUBLE_CLICK);
+    drawHandlerRef.current = handler;
+
+    return () => {
+      if (drawHandlerRef.current) {
+        drawHandlerRef.current.destroy();
+        drawHandlerRef.current = null;
+      }
+    };
+  }, [isDrawing]);
+
+  const undoLastPoint = () => {
+    const viewer = viewerRef.current;
+    if (!viewer) return;
+    drawPositionsRef.current.pop();
+    const last = drawPointEntitiesRef.current.pop();
+    if (last) { try { viewer.entities.remove(last); } catch { /* noop */ } }
+    setPointCount(drawPositionsRef.current.length);
+  };
+
+  const finishDrawing = () => {
+    const pts = drawPositionsRef.current;
+    if (pts.length < 3) return;
+    const coords = pts.map((c) => {
+      const carto = Cartographic.fromCartesian(c);
+      return [CesiumMath.toDegrees(carto.longitude), CesiumMath.toDegrees(carto.latitude)];
+    });
+    onPolygonComplete?.(coords);
+  };
+
+  const btn: CSSProperties = {
+    border: "none",
+    borderRadius: 6,
+    padding: "6px 10px",
+    fontSize: 12,
+    cursor: "pointer",
+    color: "white",
+    background: "#334155",
+  };
+
   return (
-    <div 
-      ref={containerRef} 
-      style={{ height: "100%", width: "100%" }}
-    />
+    <div style={{ position: "relative", height: "100%", width: "100%" }}>
+      <div ref={containerRef} style={{ height: "100%", width: "100%" }} />
+      {isDrawing && (
+        <div
+          style={{
+            position: "absolute",
+            top: 12,
+            left: 12,
+            zIndex: 20,
+            display: "flex",
+            gap: 8,
+            alignItems: "center",
+            background: "rgba(15,23,42,0.85)",
+            padding: "8px 12px",
+            borderRadius: 10,
+            boxShadow: "0 2px 10px rgba(0,0,0,0.3)",
+          }}
+        >
+          <span style={{ color: "white", fontSize: 12 }}>
+            Clique nos cantos da área — {pointCount} ponto{pointCount === 1 ? "" : "s"}
+          </span>
+          <button style={{ ...btn, opacity: pointCount === 0 ? 0.5 : 1 }} onClick={undoLastPoint} disabled={pointCount === 0}>
+            Desfazer
+          </button>
+          <button style={{ ...btn, background: "#22c55e", opacity: pointCount < 3 ? 0.5 : 1 }} onClick={finishDrawing} disabled={pointCount < 3}>
+            Concluir
+          </button>
+          <button style={{ ...btn, background: "#ef4444" }} onClick={() => onCancelDraw?.()}>
+            Cancelar
+          </button>
+        </div>
+      )}
+    </div>
   );
 }
 
