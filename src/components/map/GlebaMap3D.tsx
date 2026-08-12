@@ -20,8 +20,9 @@ import { Tables } from "@/integrations/supabase/types";
 
 type Gleba = Tables<"glebas">;
 
-// ⚠️ IMPORTANTE: Sua Google Maps API Key
-const GOOGLE_MAPS_API_KEY = "AIzaSyDqTgpc8FdUMf622yGI7IFHDcS_e9JncBI";
+// ⚠️ IMPORTANTE: Sua Google Maps API Key (Map Tiles API / 3D fotorrealista).
+// Restringir por domínio no Google Cloud, pois fica exposta no frontend.
+const GOOGLE_MAPS_API_KEY = "AIzaSyD1TUhIjg_CBJrzzt8CVh8TmpHqroMfnDE";
 
 // Cores por status
 const STATUS_COLORS: Record<string, Color> = {
