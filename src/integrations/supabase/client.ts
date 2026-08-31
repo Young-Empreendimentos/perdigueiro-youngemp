@@ -20,4 +20,4 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
 // Client para o schema dedicado "perdigueiro" (mesma conexao/auth do supabase acima).
 // O cast "as unknown as public" e so de tipagem: os tipos gerados so conhecem o schema
 // public; em runtime o cliente vai para o schema perdigueiro. (Mesmo padrao do RH/Pilares.)
-export const perdigueiroDb = supabase.schema("perdigueiro" as unknown as "public");
+export const perdigueiroDb = (supabase as any).schema("perdigueiro") as any;
