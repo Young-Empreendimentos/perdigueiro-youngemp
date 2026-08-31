@@ -7,7 +7,7 @@ import { GlebaKanban } from "@/components/glebas/GlebaKanban";
 import { GlebaTable } from "@/components/glebas/GlebaTable";
 import { GoogleDriveSyncConfig } from "@/components/glebas/GoogleDriveSyncConfig";
 import { GoogleEarthIntegrationCard } from "@/components/glebas/GoogleEarthIntegrationCard";
-import { Tables } from "@/integrations/supabase/types";
+import { Tables } from "@/integrations/supabase/db-types";
 import { Kanban, Table2, Settings } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";

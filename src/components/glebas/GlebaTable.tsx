@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
-import { Tables } from "@/integrations/supabase/types";
+import { Tables } from "@/integrations/supabase/db-types";
 import { useGlebas, STATUS_LABELS } from "@/hooks/useGlebas";
 import { useCidades } from "@/hooks/useCidades";
 import { validateGlebaStatus } from "@/lib/glebaValidation";

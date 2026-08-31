@@ -1,4 +1,4 @@
-import { Tables } from "@/integrations/supabase/types";
+import { Tables } from "@/integrations/supabase/db-types";
 
 type Gleba = Tables<"glebas">;
 

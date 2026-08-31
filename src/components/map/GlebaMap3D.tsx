@@ -16,7 +16,7 @@ import {
   CallbackProperty,
 } from "cesium";
 import "cesium/Build/Cesium/Widgets/widgets.css";
-import { Tables } from "@/integrations/supabase/types";
+import { Tables } from "@/integrations/supabase/db-types";
 
 type Gleba = Tables<"glebas">;
 

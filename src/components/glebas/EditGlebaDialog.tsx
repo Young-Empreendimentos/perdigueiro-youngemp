@@ -33,7 +33,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { FileUpload } from "@/components/ui/file-upload";
 import { useToast } from "@/hooks/use-toast";
 import { useGlebas, STATUS_LABELS } from "@/hooks/useGlebas";
-import { Tables } from "@/integrations/supabase/types";
+import { Tables } from "@/integrations/supabase/db-types";
 import { Loader2 } from "lucide-react";
 import { supabase, perdigueiroDb } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";

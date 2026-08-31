@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase, perdigueiroDb } from "@/integrations/supabase/client";
-import { Tables, TablesInsert } from "@/integrations/supabase/types";
+import { Tables, TablesInsert } from "@/integrations/supabase/db-types";
 import { assertAfetou } from "@/lib/db";
 
 type Atividade = Tables<"atividades">;

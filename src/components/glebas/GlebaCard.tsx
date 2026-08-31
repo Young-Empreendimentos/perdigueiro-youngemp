@@ -1,4 +1,4 @@
-import { Tables } from "@/integrations/supabase/types";
+import { Tables } from "@/integrations/supabase/db-types";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { STATUS_LABELS, useGlebas } from "@/hooks/useGlebas";

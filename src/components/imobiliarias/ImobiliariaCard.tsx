@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useAuth } from "@/contexts/AuthContext";
 import { useImobiliarias } from "@/hooks/useImobiliarias";
-import { Tables } from "@/integrations/supabase/types";
+import { Tables } from "@/integrations/supabase/db-types";
 import { toast } from "sonner";
 
 type Imobiliaria = Tables<"imobiliarias">;

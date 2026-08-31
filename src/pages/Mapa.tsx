@@ -4,7 +4,7 @@ import { useAllPesquisaTerrenos } from "@/hooks/usePesquisasMercado";
 import { GlebaMap3D, parseKmzFile, PesquisaPin } from "@/components/map/GlebaMap3D";
 import { GlebaCard } from "@/components/glebas/GlebaCard";
 import { EditGlebaDialog } from "@/components/glebas/EditGlebaDialog";
-import { Tables } from "@/integrations/supabase/types";
+import { Tables } from "@/integrations/supabase/db-types";
 import { supabase } from "@/integrations/supabase/client";
 import {
   Map,

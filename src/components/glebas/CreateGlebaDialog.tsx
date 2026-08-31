@@ -25,7 +25,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useGlebas } from "@/hooks/useGlebas";
 import { useCidades } from "@/hooks/useCidades";
 import { CidadeAutocomplete } from "@/components/cidades/CidadeAutocomplete";
-import { Tables } from "@/integrations/supabase/types";
+import { Tables } from "@/integrations/supabase/db-types";
 import { Plus, Loader2 } from "lucide-react";
 import { CidadeBrasil } from "@/hooks/useCidadesBrasil";
 
