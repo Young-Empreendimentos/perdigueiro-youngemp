@@ -6,25 +6,40 @@ import { assertAfetou } from "@/lib/db";
 type Atividade = Tables<"atividades">;
 type AtividadeInsert = TablesInsert<"atividades">;
 
+const PAGE_SIZE = 1000;
+
 export function useAtividades() {
   const queryClient = useQueryClient();
 
   const { data: atividades = [], isLoading } = useQuery({
     queryKey: ["atividades"],
     queryFn: async () => {
-      const { data, error } = await perdigueiroDb
-        .from("atividades")
-        .select(`
-          *,
-          gleba:glebas(id, apelido),
-          tipo_atividade:tipos_atividade(id, nome)
-        `)
-        .order("data", { ascending: false });
+      const all: any[] = [];
+      let from = 0;
 
-      if (error) throw error;
-      return data;
+      while (true) {
+        const { data, error } = await perdigueiroDb
+          .from("atividades")
+          .select(`
+            *,
+            gleba:glebas(id, apelido),
+            tipo_atividade:tipos_atividade(id, nome)
+          `)
+          .order("data", { ascending: false })
+          .order("created_at", { ascending: false })
+          .range(from, from + PAGE_SIZE - 1);
+
+        if (error) throw error;
+        const rows = (data || []) as any[];
+        all.push(...rows);
+        if (rows.length < PAGE_SIZE) break;
+        from += PAGE_SIZE;
+      }
+
+      return all;
     },
   });
+
 
   const createAtividade = useMutation({
     mutationFn: async (data: AtividadeInsert) => {
