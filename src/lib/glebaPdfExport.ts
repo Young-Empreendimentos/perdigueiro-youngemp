@@ -3,7 +3,7 @@ import autoTable from "jspdf-autotable";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { supabase, perdigueiroDb } from "@/integrations/supabase/client";
-import { Tables } from "@/integrations/supabase/types";
+import { Tables } from "@/integrations/supabase/db-types";
 import { STATUS_LABELS } from "@/hooks/useGlebas";
 
 type Gleba = Tables<"glebas">;

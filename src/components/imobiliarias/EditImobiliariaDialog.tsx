@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { useImobiliarias } from "@/hooks/useImobiliarias";
-import { Tables } from "@/integrations/supabase/types";
+import { Tables } from "@/integrations/supabase/db-types";
 import { SemPermissaoError } from "@/lib/db";
 import { toast } from "sonner";
 

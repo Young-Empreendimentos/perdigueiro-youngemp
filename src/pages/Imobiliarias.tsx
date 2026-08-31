@@ -9,7 +9,7 @@ import { ImobiliariaCard } from "@/components/imobiliarias/ImobiliariaCard";
 import { ImobiliariaGlebasDialog } from "@/components/imobiliarias/ImobiliariaGlebasDialog";
 import { GlebaDetailsDialog } from "@/components/glebas/GlebaDetailsDialog";
 import { EditGlebaDialog } from "@/components/glebas/EditGlebaDialog";
-import { Tables } from "@/integrations/supabase/types";
+import { Tables } from "@/integrations/supabase/db-types";
 
 type Imobiliaria = Tables<"imobiliarias">;
 type Gleba = Tables<"glebas">;
