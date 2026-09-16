@@ -32,18 +32,35 @@ const STATUS_ORDER = [
   "standby",
 ];
 
+// O PostgREST corta cada request em 1000 linhas ("Max rows" do Supabase), e um
+// .range(0, 99999) numa tirada só NÃO fura esse teto. Como as glebas passam de
+// 1000, buscamos em páginas de 1000 até vir uma página incompleta. O .order("id")
+// no fim garante ordem total (desempate) para a paginação não pular/duplicar.
+const PAGE_SIZE = 1000;
+
 export function useGlebas() {
   const { data: glebas = [], isLoading, refetch } = useQuery({
     queryKey: ["glebas"],
     queryFn: async () => {
-      const { data, error } = await perdigueiroDb
-        .from("glebas")
-        .select("*")
-        .order("created_at", { ascending: false })
-        .range(0, 99999);
+      const all: Gleba[] = [];
+      let from = 0;
 
-      if (error) throw error;
-      return data as Gleba[];
+      while (true) {
+        const { data, error } = await perdigueiroDb
+          .from("glebas")
+          .select("*")
+          .order("created_at", { ascending: false })
+          .order("id", { ascending: false })
+          .range(from, from + PAGE_SIZE - 1);
+
+        if (error) throw error;
+        const rows = (data || []) as Gleba[];
+        all.push(...rows);
+        if (rows.length < PAGE_SIZE) break;
+        from += PAGE_SIZE;
+      }
+
+      return all;
     },
   });
 
