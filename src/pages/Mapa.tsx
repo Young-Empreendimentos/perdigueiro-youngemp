@@ -1,5 +1,6 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useMemo } from "react";
 import { useGlebas } from "@/hooks/useGlebas";
+import { useCidades } from "@/hooks/useCidades";
 import { useAllPesquisaTerrenos } from "@/hooks/usePesquisasMercado";
 import { GlebaMap3D, parseKmzFile, PesquisaPin } from "@/components/map/GlebaMap3D";
 import { GlebaCard } from "@/components/glebas/GlebaCard";
@@ -18,8 +19,18 @@ import {
   ExternalLink,
   RefreshCw,
   CloudDownload,
-  Pencil
+  Pencil,
+  LocateFixed,
+  MapPin,
+  X
 } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import {
@@ -55,6 +66,30 @@ function polygonAreaM2(coords: number[][]): number {
   return Math.abs((sum * R * R) / 2);
 }
 
+// Centro aproximado de uma gleba (média dos vértices do anel externo), em lon/lat.
+function glebaCentro(geojson: any): { lon: number; lat: number } | null {
+  if (!geojson) return null;
+  const g = geojson.type === "Feature" ? geojson.geometry : geojson;
+  let ring: number[][] | null = null;
+  if (g?.type === "Polygon") ring = g.coordinates?.[0] ?? null;
+  else if (g?.type === "MultiPolygon") ring = g.coordinates?.[0]?.[0] ?? null;
+  else if (g?.type === "Point" && g.coordinates) return { lon: g.coordinates[0], lat: g.coordinates[1] };
+  if (!ring || !ring.length) return null;
+  let sx = 0, sy = 0;
+  for (const [x, y] of ring) { sx += x; sy += y; }
+  return { lon: sx / ring.length, lat: sy / ring.length };
+}
+
+// Distância em km entre dois pontos lon/lat (Haversine).
+function distanciaKm(a: { lon: number; lat: number }, b: { lon: number; lat: number }): number {
+  const R = 6371;
+  const rad = (d: number) => (d * Math.PI) / 180;
+  const dLat = rad(b.lat - a.lat);
+  const dLon = rad(b.lon - a.lon);
+  const h = Math.sin(dLat / 2) ** 2 + Math.cos(rad(a.lat)) * Math.cos(rad(b.lat)) * Math.sin(dLon / 2) ** 2;
+  return 2 * R * Math.asin(Math.min(1, Math.sqrt(h)));
+}
+
 export default function Mapa() {
   const { glebas, isLoading, createGleba, refetch } = useGlebas();
   const { data: pesquisaTerrenosRaw = [] } = useAllPesquisaTerrenos();
@@ -77,6 +112,88 @@ export default function Mapa() {
   const [driveFileId, setDriveFileId] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
+
+  // --- Filtros / localização ---
+  const { cidades } = useCidades();
+  const [fCidadeId, setFCidadeId] = useState<string>("all");
+  const [userPos, setUserPos] = useState<{ lon: number; lat: number } | null>(null);
+  const [locating, setLocating] = useState(false);
+  const [focusTarget, setFocusTarget] = useState<{ lon: number; lat: number } | null>(null);
+
+  // Só as cidades que têm gleba (dropdown enxuto).
+  const cidadesComGlebas = useMemo(() => {
+    const ids = new Set(glebas.map((g) => (g as any).cidade_id).filter(Boolean));
+    return (cidades ?? [])
+      .filter((c: any) => ids.has(c.id))
+      .sort((a: any, b: any) => String(a.nome).localeCompare(String(b.nome)));
+  }, [glebas, cidades]);
+
+  // Glebas visíveis: filtra por cidade e, com GPS ligado, ordena pela distância.
+  const glebasVisiveis = useMemo(() => {
+    let arr = fCidadeId !== "all"
+      ? glebas.filter((g) => (g as any).cidade_id === fCidadeId)
+      : glebas.slice();
+    if (userPos) {
+      arr = arr
+        .map((g) => {
+          const c = glebaCentro((g as any).poligono_geojson);
+          return { g, d: c ? distanciaKm(userPos, c) : Infinity };
+        })
+        .sort((a, b) => a.d - b.d)
+        .map((x) => x.g);
+    }
+    return arr;
+  }, [glebas, fCidadeId, userPos]);
+
+  const distanciaDe = (g: Gleba): number | null => {
+    if (!userPos) return null;
+    const c = glebaCentro((g as any).poligono_geojson);
+    return c ? distanciaKm(userPos, c) : null;
+  };
+
+  const handlePertoDeMim = () => {
+    if (!("geolocation" in navigator)) {
+      toast({ variant: "destructive", title: "GPS indisponível", description: "Seu navegador não suporta geolocalização." });
+      return;
+    }
+    setLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const p = { lon: pos.coords.longitude, lat: pos.coords.latitude };
+        setUserPos(p);
+        setFocusTarget({ ...p });
+        setLocating(false);
+        toast({ title: "Localização encontrada", description: "Glebas ordenadas pela distância de você." });
+      },
+      (err) => {
+        setLocating(false);
+        toast({
+          variant: "destructive",
+          title: "Não consegui pegar sua localização",
+          description: err.code === err.PERMISSION_DENIED
+            ? "Permissão negada — autorize o acesso à localização no navegador."
+            : "Tente de novo (de preferência em local aberto).",
+        });
+      },
+      { enableHighAccuracy: true, timeout: 10000 },
+    );
+  };
+
+  const handleCidade = (id: string) => {
+    setFCidadeId(id);
+    if (id !== "all") {
+      const centros = glebas
+        .filter((g) => (g as any).cidade_id === id)
+        .map((g) => glebaCentro((g as any).poligono_geojson))
+        .filter(Boolean) as { lon: number; lat: number }[];
+      if (centros.length) {
+        setFocusTarget({
+          lon: centros.reduce((s, c) => s + c.lon, 0) / centros.length,
+          lat: centros.reduce((s, c) => s + c.lat, 0) / centros.length,
+        });
+      }
+    }
+  };
 
   // --- Desenhar nova gleba no mapa 3D ---
   const [isDrawing, setIsDrawing] = useState(false);
@@ -415,6 +532,50 @@ export default function Mapa() {
         </div>
       </div>
 
+      {/* Filtros / localização */}
+      <div className="flex flex-wrap items-center gap-2">
+        <Button
+          variant={userPos ? "default" : "outline"}
+          size="sm"
+          onClick={handlePertoDeMim}
+          disabled={locating}
+        >
+          <LocateFixed className="h-4 w-4 mr-2" />
+          {locating ? "Localizando..." : "Perto de mim"}
+        </Button>
+
+        <Select value={fCidadeId} onValueChange={handleCidade}>
+          <SelectTrigger className="w-full sm:w-56">
+            <div className="flex items-center gap-2">
+              <MapPin className="h-4 w-4" />
+              <SelectValue placeholder="Filtrar por cidade" />
+            </div>
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todas as cidades</SelectItem>
+            {cidadesComGlebas.map((c: any) => (
+              <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        {(userPos || fCidadeId !== "all") && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => { setUserPos(null); setFCidadeId("all"); }}
+          >
+            <X className="h-4 w-4 mr-1" />
+            Limpar
+          </Button>
+        )}
+        {userPos && (
+          <span className="text-xs text-muted-foreground">
+            Ordenado por distância de você
+          </span>
+        )}
+      </div>
+
       {/* Map Container */}
       <div className={cn(
         "grid gap-4",
@@ -428,7 +589,7 @@ export default function Mapa() {
         )}>
           {!isLoading && (
             <GlebaMap3D
-              glebas={glebas}
+              glebas={glebasVisiveis}
               pesquisaTerrenos={pesquisaPins}
               onSelectGleba={setSelectedGleba}
               selectedGlebaId={selectedGleba?.id}
@@ -436,6 +597,8 @@ export default function Mapa() {
               isDrawing={isDrawing}
               onPolygonComplete={handlePolygonComplete}
               onCancelDraw={() => setIsDrawing(false)}
+              focusTarget={focusTarget}
+              userPos={userPos}
             />
           )}
         </div>
@@ -471,23 +634,31 @@ export default function Mapa() {
             </div>
 
             <div className="border-t mt-4 pt-4">
-              <h4 className="text-sm font-medium mb-2">Glebas ({glebas.length})</h4>
+              <h4 className="text-sm font-medium mb-2">Glebas ({glebasVisiveis.length})</h4>
               <div className="space-y-2 max-h-[250px] overflow-y-auto scrollbar-thin">
-                {glebas.map((gleba) => (
-                  <div
-                    key={gleba.id}
-                    onClick={() => setSelectedGleba(gleba)}
-                    className="p-2 rounded border cursor-pointer hover:bg-muted text-xs transition-colors"
-                  >
-                    <div className="font-medium truncate">{gleba.apelido}</div>
-                    <div className="text-muted-foreground capitalize">
-                      {gleba.status.replace(/_/g, " ")}
+                {glebasVisiveis.map((gleba) => {
+                  const dist = distanciaDe(gleba);
+                  return (
+                    <div
+                      key={gleba.id}
+                      onClick={() => setSelectedGleba(gleba)}
+                      className="p-2 rounded border cursor-pointer hover:bg-muted text-xs transition-colors"
+                    >
+                      <div className="font-medium truncate">{gleba.apelido}</div>
+                      <div className="text-muted-foreground capitalize flex items-center justify-between gap-2">
+                        <span className="truncate">{gleba.status.replace(/_/g, " ")}</span>
+                        {dist != null && (
+                          <span className="whitespace-nowrap normal-case">
+                            {dist.toLocaleString("pt-BR", { maximumFractionDigits: 1 })} km
+                          </span>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                ))}
-                {glebas.length === 0 && (
+                  );
+                })}
+                {glebasVisiveis.length === 0 && (
                   <p className="text-sm text-muted-foreground text-center py-4">
-                    Nenhuma gleba cadastrada
+                    Nenhuma gleba {fCidadeId !== "all" ? "nesta cidade" : "cadastrada"}
                   </p>
                 )}
               </div>

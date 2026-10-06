@@ -83,6 +83,10 @@ interface GlebaMap3DProps {
   onPolygonComplete?: (coords: number[][]) => void;
   /** Chamado quando o usuário cancela o desenho */
   onCancelDraw?: () => void;
+  /** Quando muda, o mapa voa até este ponto (lon/lat em graus). */
+  focusTarget?: { lon: number; lat: number } | null;
+  /** Posição do usuário (GPS) para marcar "Você" no mapa. */
+  userPos?: { lon: number; lat: number } | null;
 }
 
 // Converte GeoJSON para array de Cartesian3
@@ -161,6 +165,8 @@ export function GlebaMap3D({
   isDrawing = false,
   onPolygonComplete,
   onCancelDraw,
+  focusTarget,
+  userPos,
 }: GlebaMap3DProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const viewerRef = useRef<Viewer | null>(null);
@@ -178,6 +184,7 @@ export function GlebaMap3D({
   const [localLabel, setLocalLabel] = useState<string>("");
   const localDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const localSeqRef = useRef(0);
+  const userEntityRef = useRef<any>(null);
 
   // Inicializar o viewer
   useEffect(() => {
@@ -258,6 +265,47 @@ export function GlebaMap3D({
       }
     };
   }, []);
+
+  // Voar até um ponto (busca de cidade / "perto de mim")
+  useEffect(() => {
+    const viewer = viewerRef.current;
+    if (!viewer || viewer.isDestroyed() || !focusTarget) return;
+    viewer.camera.flyTo({
+      destination: Cartesian3.fromDegrees(focusTarget.lon, focusTarget.lat, 6000),
+      duration: 1.8,
+    });
+  }, [focusTarget]);
+
+  // Marcador "Você" (posição do GPS)
+  useEffect(() => {
+    const viewer = viewerRef.current;
+    if (!viewer || viewer.isDestroyed()) return;
+    if (userEntityRef.current) {
+      try { viewer.entities.remove(userEntityRef.current); } catch { /* noop */ }
+      userEntityRef.current = null;
+    }
+    if (userPos) {
+      userEntityRef.current = viewer.entities.add({
+        position: Cartesian3.fromDegrees(userPos.lon, userPos.lat),
+        point: {
+          pixelSize: 14,
+          color: Color.fromCssColorString("#2563eb"),
+          outlineColor: Color.WHITE,
+          outlineWidth: 3,
+          disableDepthTestDistance: Number.POSITIVE_INFINITY,
+        },
+        label: {
+          text: "Você",
+          font: "13px sans-serif",
+          fillColor: Color.WHITE,
+          showBackground: true,
+          backgroundColor: Color.fromCssColorString("#1e40af"),
+          pixelOffset: new Cartesian2(0, -22),
+          disableDepthTestDistance: Number.POSITIVE_INFINITY,
+        },
+      });
+    }
+  }, [userPos]);
 
   // Adicionar entidades das glebas
   useEffect(() => {
