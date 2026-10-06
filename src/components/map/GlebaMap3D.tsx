@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { CSSProperties } from "react";
 import {
+  Cartesian2,
   Cartesian3,
   Color,
   PolygonHierarchy,
@@ -17,6 +18,7 @@ import {
 } from "cesium";
 import "cesium/Build/Cesium/Widgets/widgets.css";
 import { Tables } from "@/integrations/supabase/db-types";
+import { resolverLocal } from "@/lib/ibgeMalhas";
 
 type Gleba = Tables<"glebas">;
 
@@ -172,6 +174,11 @@ export function GlebaMap3D({
   const drawHandlerRef = useRef<ScreenSpaceEventHandler | null>(null);
   const [pointCount, setPointCount] = useState(0);
 
+  // --- Rótulo "você está em: Município – UF" (reverse geocoding grátis via IBGE) ---
+  const [localLabel, setLocalLabel] = useState<string>("");
+  const localDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const localSeqRef = useRef(0);
+
   // Inicializar o viewer
   useEffect(() => {
     if (!containerRef.current || viewerRef.current) return;
@@ -216,7 +223,31 @@ export function GlebaMap3D({
       duration: 2,
     });
 
+    // Rótulo "você está em" — ao parar de mover a câmera, descobre o município
+    // do centro da tela via malhas do IBGE (grátis). Debounce p/ não consultar à toa.
+    const atualizarLocal = () => {
+      if (viewer.isDestroyed()) return;
+      const canvas = viewer.scene.canvas;
+      const centro = new Cartesian2(canvas.clientWidth / 2, canvas.clientHeight / 2);
+      const ponto = viewer.camera.pickEllipsoid(centro, viewer.scene.globe.ellipsoid);
+      if (!ponto) { setLocalLabel(""); return; }
+      const carto = Cartographic.fromCartesian(ponto);
+      const lon = CesiumMath.toDegrees(carto.longitude);
+      const lat = CesiumMath.toDegrees(carto.latitude);
+      const seq = ++localSeqRef.current;
+      resolverLocal(lon, lat).then((info) => {
+        if (seq === localSeqRef.current) setLocalLabel(info?.label ?? "");
+      });
+    };
+    const onMoveEnd = () => {
+      if (localDebounceRef.current) clearTimeout(localDebounceRef.current);
+      localDebounceRef.current = setTimeout(atualizarLocal, 400);
+    };
+    const removeMoveEnd = viewer.camera.moveEnd.addEventListener(onMoveEnd);
+
     return () => {
+      removeMoveEnd();
+      if (localDebounceRef.current) clearTimeout(localDebounceRef.current);
       if (handlerRef.current) {
         handlerRef.current.destroy();
         handlerRef.current = null;
@@ -507,6 +538,30 @@ export function GlebaMap3D({
           <button style={{ ...btn, background: "#ef4444" }} onClick={() => onCancelDraw?.()}>
             Cancelar
           </button>
+        </div>
+      )}
+      {localLabel && !isDrawing && (
+        <div
+          title="Cidade no centro do mapa (IBGE)"
+          style={{
+            position: "absolute",
+            top: 12,
+            left: 12,
+            zIndex: 15,
+            display: "flex",
+            alignItems: "center",
+            gap: 6,
+            background: "rgba(15,23,42,0.82)",
+            color: "white",
+            padding: "6px 12px",
+            borderRadius: 999,
+            fontSize: 13,
+            boxShadow: "0 2px 10px rgba(0,0,0,0.3)",
+            pointerEvents: "none",
+          }}
+        >
+          <span>📍</span>
+          <span>{localLabel}</span>
         </div>
       )}
     </div>
