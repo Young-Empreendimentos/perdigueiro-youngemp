@@ -3,7 +3,7 @@ import { useGlebas } from "@/hooks/useGlebas";
 import { useCidades } from "@/hooks/useCidades";
 import { useAllPesquisaTerrenos } from "@/hooks/usePesquisasMercado";
 import { GlebaMap3D, parseKmzFile, PesquisaPin } from "@/components/map/GlebaMap3D";
-import { GlebaCard } from "@/components/glebas/GlebaCard";
+import { GlebaDetalhePanel } from "@/components/glebas/GlebaDetalhePanel";
 import { EditGlebaDialog } from "@/components/glebas/EditGlebaDialog";
 import { Tables } from "@/integrations/supabase/db-types";
 import { supabase } from "@/integrations/supabase/client";
@@ -804,18 +804,23 @@ export default function Mapa() {
 
       {/* Selected Gleba Sheet */}
       <Sheet open={!!selectedGleba} onOpenChange={(open) => !open && setSelectedGleba(null)}>
-        <SheetContent side="bottom" className="h-[300px]">
+        <SheetContent side="bottom" className="max-h-[75vh] overflow-y-auto">
           <SheetHeader>
-            <SheetTitle>{selectedGleba?.apelido}</SheetTitle>
+            <SheetTitle className="flex items-center gap-2">
+              <MapPin className="h-4 w-4 text-primary" />
+              {selectedGleba?.apelido}
+            </SheetTitle>
           </SheetHeader>
           {selectedGleba && (
             <div className="mt-4">
-              <div onClick={() => {
-                setEditingGleba(selectedGleba);
-                setSelectedGleba(null);
-              }}>
-                <GlebaCard gleba={selectedGleba} />
-              </div>
+              <GlebaDetalhePanel
+                gleba={selectedGleba}
+                distanciaKm={distanciaDe(selectedGleba)}
+                onEditar={() => {
+                  setEditingGleba(selectedGleba);
+                  setSelectedGleba(null);
+                }}
+              />
             </div>
           )}
         </SheetContent>
