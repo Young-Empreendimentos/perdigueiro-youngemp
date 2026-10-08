@@ -93,7 +93,10 @@ function distanciaKm(a: { lon: number; lat: number }, b: { lon: number; lat: num
 export default function Mapa() {
   const { glebas, isLoading, createGleba, refetch } = useGlebas();
   const { data: pesquisaTerrenosRaw = [] } = useAllPesquisaTerrenos();
-  const pesquisaPins: PesquisaPin[] = pesquisaTerrenosRaw
+  // Memoizado: sem isso, um novo array era criado a cada render do Mapa, o que
+  // re-disparava o efeito de desenhar as glebas no GlebaMap3D (removeAll + re-add
+  // + flyTo), puxando a câmera pra "primeira gleba" a cada seleção/interação.
+  const pesquisaPins: PesquisaPin[] = useMemo(() => pesquisaTerrenosRaw
     .filter((t) => t.latitude != null && t.longitude != null && t.pesquisa)
     .map((t) => ({
       id: t.id, nome: t.nome, preco: t.preco, tamanho_m2: t.tamanho_m2,
@@ -101,7 +104,7 @@ export default function Mapa() {
       observacoes: t.observacoes, url_anuncio: t.url_anuncio, imagem_url: t.imagem_url,
       latitude: t.latitude as number, longitude: t.longitude as number,
       pesquisa_nome: t.pesquisa!.nome, pesquisa_data: t.pesquisa!.data_pesquisa,
-    }));
+    })), [pesquisaTerrenosRaw]);
   const [selectedGleba, setSelectedGleba] = useState<Gleba | null>(null);
   const [editingGleba, setEditingGleba] = useState<Gleba | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
