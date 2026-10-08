@@ -149,7 +149,11 @@ export function GlebaCard({ gleba, showInactiveIcon }: GlebaCardProps) {
         <div className="flex gap-4 text-sm">
           <div className="flex items-center gap-1">
             <span className="text-muted-foreground">
-              {gleba.tamanho_m2 ? `${gleba.tamanho_m2.toLocaleString()} ha` : "—"}
+              {gleba.tamanho_m2
+                ? gleba.tamanho_m2 >= 10000
+                  ? `${(gleba.tamanho_m2 / 10000).toLocaleString("pt-BR", { maximumFractionDigits: 2 })} ha`
+                  : `${Math.round(gleba.tamanho_m2).toLocaleString("pt-BR")} m²`
+                : "—"}
             </span>
           </div>
           {gleba.preco && (
