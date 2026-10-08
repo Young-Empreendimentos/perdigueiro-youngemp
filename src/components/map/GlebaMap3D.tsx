@@ -185,6 +185,7 @@ export function GlebaMap3D({
   const localDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const localSeqRef = useRef(0);
   const userEntityRef = useRef<any>(null);
+  const didInitialFlyRef = useRef(false);
 
   // Inicializar o viewer
   useEffect(() => {
@@ -383,8 +384,11 @@ export function GlebaMap3D({
       });
     });
 
-    // Voar para a primeira gleba quando as glebas forem carregadas
-    if (firstGlebaCenter && glebas.length > 0) {
+    // Voar para a primeira gleba SÓ no primeiro carregamento — nunca de novo.
+    // (Antes isso rodava a cada render/seleção e jogava a câmera de volta pra
+    // "primeira gleba", tirando o usuário de onde estava.)
+    if (!didInitialFlyRef.current && firstGlebaCenter && glebas.length > 0) {
+      didInitialFlyRef.current = true;
       viewer.camera.flyTo({
         destination: Cartesian3.fromDegrees(firstGlebaCenter.lon, firstGlebaCenter.lat, 15000),
         duration: 2,
