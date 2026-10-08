@@ -83,10 +83,12 @@ interface GlebaMap3DProps {
   onPolygonComplete?: (coords: number[][]) => void;
   /** Chamado quando o usuário cancela o desenho */
   onCancelDraw?: () => void;
-  /** Quando muda, o mapa voa até este ponto (lon/lat em graus). */
-  focusTarget?: { lon: number; lat: number } | null;
+  /** Quando muda, o mapa voa até este ponto (lon/lat em graus, alt opcional em metros). */
+  focusTarget?: { lon: number; lat: number; alt?: number } | null;
   /** Posição do usuário (GPS) para marcar "Você" no mapa. */
   userPos?: { lon: number; lat: number } | null;
+  /** Incrementa para reenquadrar a câmera em todas as entidades ("ver todas"). */
+  fitSignal?: number;
 }
 
 // Converte GeoJSON para array de Cartesian3
@@ -167,6 +169,7 @@ export function GlebaMap3D({
   onCancelDraw,
   focusTarget,
   userPos,
+  fitSignal,
 }: GlebaMap3DProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const viewerRef = useRef<Viewer | null>(null);
@@ -272,10 +275,18 @@ export function GlebaMap3D({
     const viewer = viewerRef.current;
     if (!viewer || viewer.isDestroyed() || !focusTarget) return;
     viewer.camera.flyTo({
-      destination: Cartesian3.fromDegrees(focusTarget.lon, focusTarget.lat, 6000),
+      destination: Cartesian3.fromDegrees(focusTarget.lon, focusTarget.lat, focusTarget.alt ?? 6000),
       duration: 1.8,
     });
   }, [focusTarget]);
+
+  // "Ver todas": reenquadra a câmera para caber todas as entidades (glebas filtradas + pins).
+  useEffect(() => {
+    const viewer = viewerRef.current;
+    if (!viewer || viewer.isDestroyed() || !fitSignal) return;
+    if (viewer.entities.values.length === 0) return;
+    viewer.flyTo(viewer.entities, { duration: 1.5 }).catch(() => { /* voo cancelado */ });
+  }, [fitSignal]);
 
   // Marcador "Você" (posição do GPS)
   useEffect(() => {
