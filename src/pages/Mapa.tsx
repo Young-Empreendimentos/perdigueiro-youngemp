@@ -1,5 +1,5 @@
 import { useState, useRef, useMemo } from "react";
-import { useGlebas } from "@/hooks/useGlebas";
+import { useGlebas, STATUS_LABELS } from "@/hooks/useGlebas";
 import { useCidades } from "@/hooks/useCidades";
 import { useAllPesquisaTerrenos } from "@/hooks/usePesquisasMercado";
 import { GlebaMap3D, parseKmzFile, PesquisaPin } from "@/components/map/GlebaMap3D";
@@ -22,7 +22,9 @@ import {
   Pencil,
   LocateFixed,
   MapPin,
-  X
+  X,
+  Search,
+  Filter
 } from "lucide-react";
 import {
   Select,
@@ -119,9 +121,13 @@ export default function Mapa() {
   // --- Filtros / localização ---
   const { cidades } = useCidades();
   const [fCidadeId, setFCidadeId] = useState<string>("all");
+  const [fStatus, setFStatus] = useState<string>("all");
+  const [fBusca, setFBusca] = useState<string>("");
   const [userPos, setUserPos] = useState<{ lon: number; lat: number } | null>(null);
   const [locating, setLocating] = useState(false);
   const [focusTarget, setFocusTarget] = useState<{ lon: number; lat: number } | null>(null);
+
+  const temFiltro = fCidadeId !== "all" || fStatus !== "all" || fBusca.trim() !== "" || !!userPos;
 
   // Só as cidades que têm gleba (dropdown enxuto).
   const cidadesComGlebas = useMemo(() => {
@@ -131,11 +137,24 @@ export default function Mapa() {
       .sort((a: any, b: any) => String(a.nome).localeCompare(String(b.nome)));
   }, [glebas, cidades]);
 
-  // Glebas visíveis: filtra por cidade e, com GPS ligado, ordena pela distância.
+  // Glebas visíveis: filtra por cidade, status e busca; com GPS ligado, ordena pela distância.
   const glebasVisiveis = useMemo(() => {
-    let arr = fCidadeId !== "all"
-      ? glebas.filter((g) => (g as any).cidade_id === fCidadeId)
-      : glebas.slice();
+    const termo = fBusca.trim().toLowerCase();
+    let arr = glebas.filter((g) => {
+      if (fCidadeId !== "all" && (g as any).cidade_id !== fCidadeId) return false;
+      const st = (g as any).status;
+      if (fStatus === "ativas") {
+        if (st === "descartada" || st === "proposta_recusada") return false;
+      } else if (fStatus !== "all" && st !== fStatus) {
+        return false;
+      }
+      if (termo) {
+        const apelido = String((g as any).apelido ?? "").toLowerCase();
+        const numero = String((g as any).numero ?? "");
+        if (!apelido.includes(termo) && !numero.includes(termo)) return false;
+      }
+      return true;
+    });
     if (userPos) {
       arr = arr
         .map((g) => {
@@ -146,7 +165,7 @@ export default function Mapa() {
         .map((x) => x.g);
     }
     return arr;
-  }, [glebas, fCidadeId, userPos]);
+  }, [glebas, fCidadeId, fStatus, fBusca, userPos]);
 
   const distanciaDe = (g: Gleba): number | null => {
     if (!userPos) return null;
@@ -547,11 +566,21 @@ export default function Mapa() {
           {locating ? "Localizando..." : "Perto de mim"}
         </Button>
 
+        <div className="relative w-full sm:w-64">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Buscar gleba por nome ou nº…"
+            value={fBusca}
+            onChange={(e) => setFBusca(e.target.value)}
+            className="pl-9 h-9"
+          />
+        </div>
+
         <Select value={fCidadeId} onValueChange={handleCidade}>
-          <SelectTrigger className="w-full sm:w-56">
+          <SelectTrigger className="w-full sm:w-52">
             <div className="flex items-center gap-2">
               <MapPin className="h-4 w-4" />
-              <SelectValue placeholder="Filtrar por cidade" />
+              <SelectValue placeholder="Cidade" />
             </div>
           </SelectTrigger>
           <SelectContent>
@@ -562,11 +591,27 @@ export default function Mapa() {
           </SelectContent>
         </Select>
 
-        {(userPos || fCidadeId !== "all") && (
+        <Select value={fStatus} onValueChange={setFStatus}>
+          <SelectTrigger className="w-full sm:w-52">
+            <div className="flex items-center gap-2">
+              <Filter className="h-4 w-4" />
+              <SelectValue placeholder="Status" />
+            </div>
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todos os status</SelectItem>
+            <SelectItem value="ativas">Em andamento (sem descartadas)</SelectItem>
+            {Object.entries(STATUS_LABELS).map(([value, label]) => (
+              <SelectItem key={value} value={value}>{label as string}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        {temFiltro && (
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => { setUserPos(null); setFCidadeId("all"); }}
+            onClick={() => { setUserPos(null); setFCidadeId("all"); setFStatus("all"); setFBusca(""); }}
           >
             <X className="h-4 w-4 mr-1" />
             Limpar
@@ -637,7 +682,9 @@ export default function Mapa() {
             </div>
 
             <div className="border-t mt-4 pt-4">
-              <h4 className="text-sm font-medium mb-2">Glebas ({glebasVisiveis.length})</h4>
+              <h4 className="text-sm font-medium mb-2">
+                Glebas ({glebasVisiveis.length}{temFiltro && glebasVisiveis.length !== glebas.length ? ` de ${glebas.length}` : ""})
+              </h4>
               <div className="space-y-2 max-h-[250px] overflow-y-auto scrollbar-thin">
                 {glebasVisiveis.map((gleba) => {
                   const dist = distanciaDe(gleba);
