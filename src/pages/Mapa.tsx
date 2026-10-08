@@ -1,5 +1,5 @@
-import { useState, useRef, useMemo } from "react";
-import { useGlebas, STATUS_LABELS } from "@/hooks/useGlebas";
+import { useState, useRef, useMemo, useEffect } from "react";
+import { useGlebas } from "@/hooks/useGlebas";
 import { useCidades } from "@/hooks/useCidades";
 import { useAllPesquisaTerrenos } from "@/hooks/usePesquisasMercado";
 import { GlebaMap3D, parseKmzFile, PesquisaPin } from "@/components/map/GlebaMap3D";
@@ -24,7 +24,8 @@ import {
   MapPin,
   X,
   Search,
-  Filter
+  Star,
+  Expand
 } from "lucide-react";
 import {
   Select,
@@ -92,6 +93,22 @@ function distanciaKm(a: { lon: number; lat: number }, b: { lon: number; lat: num
   return 2 * R * Math.asin(Math.min(1, Math.sqrt(h)));
 }
 
+// Estado que persiste em localStorage (lembra os filtros entre sessões).
+function usePersistedState<T>(key: string, initial: T): [T, (v: T) => void] {
+  const [state, setState] = useState<T>(() => {
+    try {
+      const raw = localStorage.getItem(key);
+      return raw != null ? (JSON.parse(raw) as T) : initial;
+    } catch {
+      return initial;
+    }
+  });
+  useEffect(() => {
+    try { localStorage.setItem(key, JSON.stringify(state)); } catch { /* noop */ }
+  }, [key, state]);
+  return [state, setState];
+}
+
 export default function Mapa() {
   const { glebas, isLoading, createGleba, refetch } = useGlebas();
   const { data: pesquisaTerrenosRaw = [] } = useAllPesquisaTerrenos();
@@ -120,14 +137,19 @@ export default function Mapa() {
 
   // --- Filtros / localização ---
   const { cidades } = useCidades();
-  const [fCidadeId, setFCidadeId] = useState<string>("all");
-  const [fStatus, setFStatus] = useState<string>("all");
-  const [fBusca, setFBusca] = useState<string>("");
+  const [fCidadeId, setFCidadeId] = usePersistedState<string>("perdigueiro_mapa_cidade", "all");
+  const [fStatus, setFStatus] = usePersistedState<string>("perdigueiro_mapa_status", "all");
+  const [fBusca, setFBusca] = usePersistedState<string>("perdigueiro_mapa_busca", "");
+  const [fPrioridade, setFPrioridade] = usePersistedState<boolean>("perdigueiro_mapa_prioridade", false);
   const [userPos, setUserPos] = useState<{ lon: number; lat: number } | null>(null);
   const [locating, setLocating] = useState(false);
-  const [focusTarget, setFocusTarget] = useState<{ lon: number; lat: number } | null>(null);
+  const [focusTarget, setFocusTarget] = useState<{ lon: number; lat: number; alt?: number } | null>(null);
+  const [fitSignal, setFitSignal] = useState(0);
 
-  const temFiltro = fCidadeId !== "all" || fStatus !== "all" || fBusca.trim() !== "" || !!userPos;
+  const temFiltro = fCidadeId !== "all" || fStatus !== "all" || fBusca.trim() !== "" || fPrioridade || !!userPos;
+  const limparFiltros = () => {
+    setUserPos(null); setFCidadeId("all"); setFStatus("all"); setFBusca(""); setFPrioridade(false);
+  };
 
   // Só as cidades que têm gleba (dropdown enxuto).
   const cidadesComGlebas = useMemo(() => {
@@ -137,22 +159,38 @@ export default function Mapa() {
       .sort((a: any, b: any) => String(a.nome).localeCompare(String(b.nome)));
   }, [glebas, cidades]);
 
-  // Glebas visíveis: filtra por cidade, status e busca; com GPS ligado, ordena pela distância.
-  const glebasVisiveis = useMemo(() => {
+  // Base: aplica cidade + prioridade + busca (tudo MENOS status). Serve para o
+  // glebasVisiveis e para contar quantas há em cada status (chips/legenda).
+  const baseParaContagem = useMemo(() => {
     const termo = fBusca.trim().toLowerCase();
-    let arr = glebas.filter((g) => {
+    return glebas.filter((g) => {
       if (fCidadeId !== "all" && (g as any).cidade_id !== fCidadeId) return false;
-      const st = (g as any).status;
-      if (fStatus === "ativas") {
-        if (st === "descartada" || st === "proposta_recusada") return false;
-      } else if (fStatus !== "all" && st !== fStatus) {
-        return false;
-      }
+      if (fPrioridade && !(g as any).prioridade) return false;
       if (termo) {
         const apelido = String((g as any).apelido ?? "").toLowerCase();
         const numero = String((g as any).numero ?? "");
         if (!apelido.includes(termo) && !numero.includes(termo)) return false;
       }
+      return true;
+    });
+  }, [glebas, fCidadeId, fPrioridade, fBusca]);
+
+  // Quantas glebas em cada status (respeitando os outros filtros) — para as chips/legenda.
+  const statusCounts = useMemo(() => {
+    const m: Record<string, number> = {};
+    for (const g of baseParaContagem) {
+      const st = (g as any).status;
+      m[st] = (m[st] || 0) + 1;
+    }
+    return m;
+  }, [baseParaContagem]);
+
+  // Glebas visíveis: base + filtro de status; com GPS ligado, ordena pela distância.
+  const glebasVisiveis = useMemo(() => {
+    let arr = baseParaContagem.filter((g) => {
+      const st = (g as any).status;
+      if (fStatus === "ativas") return st !== "descartada" && st !== "proposta_recusada";
+      if (fStatus !== "all") return st === fStatus;
       return true;
     });
     if (userPos) {
@@ -165,13 +203,29 @@ export default function Mapa() {
         .map((x) => x.g);
     }
     return arr;
-  }, [glebas, fCidadeId, fStatus, fBusca, userPos]);
+  }, [baseParaContagem, fStatus, userPos]);
 
   const distanciaDe = (g: Gleba): number | null => {
     if (!userPos) return null;
     const c = glebaCentro((g as any).poligono_geojson);
     return c ? distanciaKm(userPos, c) : null;
   };
+
+  // Busca inteligente: se a busca filtrar para exatamente 1 gleba, voa até ela.
+  const buscaFlyRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!fBusca.trim()) { buscaFlyRef.current = null; return; }
+    if (glebasVisiveis.length === 1) {
+      const g = glebasVisiveis[0] as any;
+      if (buscaFlyRef.current !== g.id) {
+        buscaFlyRef.current = g.id;
+        const c = glebaCentro(g.poligono_geojson);
+        if (c) setFocusTarget({ lon: c.lon, lat: c.lat, alt: 2500 });
+      }
+    } else {
+      buscaFlyRef.current = null;
+    }
+  }, [fBusca, glebasVisiveis]);
 
   const handlePertoDeMim = () => {
     if (!("geolocation" in navigator)) {
@@ -591,28 +645,28 @@ export default function Mapa() {
           </SelectContent>
         </Select>
 
-        <Select value={fStatus} onValueChange={setFStatus}>
-          <SelectTrigger className="w-full sm:w-52">
-            <div className="flex items-center gap-2">
-              <Filter className="h-4 w-4" />
-              <SelectValue placeholder="Status" />
-            </div>
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todos os status</SelectItem>
-            <SelectItem value="ativas">Em andamento (sem descartadas)</SelectItem>
-            {Object.entries(STATUS_LABELS).map(([value, label]) => (
-              <SelectItem key={value} value={value}>{label as string}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <Button
+          variant={fPrioridade ? "default" : "outline"}
+          size="sm"
+          onClick={() => setFPrioridade(!fPrioridade)}
+          title="Mostrar só as glebas prioritárias"
+        >
+          <Star className={cn("h-4 w-4 mr-2", fPrioridade && "fill-current")} />
+          Prioritárias
+        </Button>
+
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setFitSignal((n) => n + 1)}
+          title="Reenquadrar a câmera para mostrar todas as glebas filtradas"
+        >
+          <Expand className="h-4 w-4 mr-2" />
+          Ver todas
+        </Button>
 
         {temFiltro && (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => { setUserPos(null); setFCidadeId("all"); setFStatus("all"); setFBusca(""); }}
-          >
+          <Button variant="ghost" size="sm" onClick={limparFiltros}>
             <X className="h-4 w-4 mr-1" />
             Limpar
           </Button>
@@ -647,6 +701,7 @@ export default function Mapa() {
               onCancelDraw={() => setIsDrawing(false)}
               focusTarget={focusTarget}
               userPos={userPos}
+              fitSignal={fitSignal}
             />
           )}
         </div>
@@ -654,11 +709,31 @@ export default function Mapa() {
         {/* Sidebar - Esconde em fullscreen */}
         {!isFullscreen && (
           <div className="rounded-lg border p-4 overflow-y-auto">
-            <h3 className="font-semibold mb-3 flex items-center gap-2">
+            <h3 className="font-semibold mb-2 flex items-center gap-2">
               <Layers className="h-4 w-4" />
-              Legenda
+              Status
             </h3>
-            <div className="space-y-2">
+            <div className="flex gap-1.5 mb-2">
+              <button
+                onClick={() => setFStatus("all")}
+                className={cn(
+                  "text-xs rounded px-2 py-1 border transition-colors",
+                  fStatus === "all" ? "bg-primary text-primary-foreground border-primary" : "hover:bg-muted",
+                )}
+              >
+                Todas
+              </button>
+              <button
+                onClick={() => setFStatus("ativas")}
+                className={cn(
+                  "text-xs rounded px-2 py-1 border transition-colors",
+                  fStatus === "ativas" ? "bg-primary text-primary-foreground border-primary" : "hover:bg-muted",
+                )}
+              >
+                Em andamento
+              </button>
+            </div>
+            <div className="space-y-1">
               {[
                 { status: "identificada", color: "#3b82f6", label: "Identificada" },
                 { status: "informacoes_recebidas", color: "#06b6d4", label: "Info. Recebidas" },
@@ -670,15 +745,25 @@ export default function Mapa() {
                 { status: "proposta_recusada", color: "#f43f5e", label: "Proposta Recusada" },
                 { status: "negocio_fechado", color: "#22c55e", label: "Negócio Fechado" },
                 { status: "standby", color: "#a855f7", label: "Standby" },
-              ].map((item) => (
-                <div key={item.status} className="flex items-center gap-2 text-xs">
-                  <div
-                    className="h-3 w-3 rounded-full flex-shrink-0"
-                    style={{ backgroundColor: item.color }}
-                  />
-                  <span className="truncate">{item.label}</span>
-                </div>
-              ))}
+              ].map((item) => {
+                const n = statusCounts[item.status] || 0;
+                const ativo = fStatus === item.status;
+                return (
+                  <button
+                    key={item.status}
+                    onClick={() => setFStatus(ativo ? "all" : item.status)}
+                    className={cn(
+                      "w-full flex items-center gap-2 text-xs rounded px-2 py-1 transition-colors",
+                      ativo ? "bg-muted ring-1 ring-primary" : "hover:bg-muted/60",
+                      n === 0 && !ativo && "opacity-50",
+                    )}
+                  >
+                    <span className="h-3 w-3 rounded-full flex-shrink-0" style={{ backgroundColor: item.color }} />
+                    <span className="truncate flex-1 text-left">{item.label}</span>
+                    <span className="text-muted-foreground tabular-nums">{n}</span>
+                  </button>
+                );
+              })}
             </div>
 
             <div className="border-t mt-4 pt-4">
