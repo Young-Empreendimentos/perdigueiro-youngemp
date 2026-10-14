@@ -63,6 +63,43 @@ interface PesquisaTerreno {
   pesquisa: { nome: string; data_pesquisa: string; cidade?: { nome: string } | null } | null;
 }
 
+// Busca TODAS as linhas em paginas, contornando o teto de ~1000 linhas da API PostgREST.
+// Avanca pelo tamanho REAL recebido e so para quando uma pagina volta vazia. Ordena por
+// "id" (chave unica e estavel) para a paginacao ser deterministica.
+async function fetchAllPaginated<T>(buildQuery: () => any, pageSize = 1000): Promise<T[]> {
+  const all: T[] = [];
+  let from = 0;
+  for (let guard = 0; guard < 10000; guard++) {
+    const { data, error } = await buildQuery().range(from, from + pageSize - 1);
+    if (error) throw error;
+    if (!data || data.length === 0) break;
+    all.push(...(data as T[]));
+    from += data.length;
+  }
+  return all;
+}
+
+function fetchAllGlebas(supabase: any): Promise<Gleba[]> {
+  return fetchAllPaginated<Gleba>(() =>
+    supabase
+      .from("glebas")
+      .select("id, numero, apelido, status, tamanho_m2, preco, proprietario_nome, poligono_geojson, prioridade, aceita_permuta, comentarios, cidade:cidades(nome)")
+      .not("poligono_geojson", "is", null)
+      .order("id", { ascending: true })
+  );
+}
+
+function fetchAllTerrenos(supabase: any): Promise<PesquisaTerreno[]> {
+  return fetchAllPaginated<PesquisaTerreno>(() =>
+    supabase
+      .from("pesquisa_mercado_terrenos")
+      .select("*, pesquisa:pesquisas_mercado(nome, data_pesquisa, cidade:cidades(nome))")
+      .not("latitude", "is", null)
+      .not("longitude", "is", null)
+      .order("id", { ascending: true })
+  );
+}
+
 function formatCurrency(value: number | null): string {
   if (value === null) return "Não informado";
   return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value);
@@ -83,21 +120,39 @@ function formatPermuta(value: string | null): string {
   return "Incerto";
 }
 
+// Numa FeatureCollection, escolhe a 1a feature com geometria de contorno (area/linha).
+// O Google Earth costuma incluir junto um Point (icone/rotulo) que NAO e o contorno —
+// pegar sempre features[0] fazia a gleba nao desenhar (ex.: #1274).
+function melhorGeometriaKml(geojson: any): any {
+  if (geojson?.type === "FeatureCollection" && geojson.features?.length) {
+    for (const t of ["Polygon", "MultiPolygon", "LineString"]) {
+      const f = geojson.features.find((x: any) => x?.geometry?.type === t);
+      if (f) return f.geometry;
+    }
+    return geojson.features[0]?.geometry ?? null; // fallback (ex.: so Point)
+  }
+  if (geojson?.type === "Feature") return geojson.geometry ?? null;
+  return geojson;
+}
+
 function geoJsonToKmlCoordinates(geojson: any): { coordinates: string; type: string } | null {
   if (!geojson) return null;
   try {
-    if (geojson.type === "FeatureCollection" && geojson.features?.length > 0) return geoJsonToKmlCoordinates(geojson.features[0]);
-    if (geojson.type === "Feature" && geojson.geometry) return geoJsonToKmlCoordinates(geojson.geometry);
-    if (geojson.type === "Polygon" && geojson.coordinates?.[0]) {
-      const coords = geojson.coordinates[0].map((c: number[]) => `${c[0]},${c[1]},0`).join(" ");
-      return { coordinates: coords, type: "Polygon" };
+    const geom = melhorGeometriaKml(geojson);
+    if (!geom) return null;
+    const anelStr = (ring: number[][]) => ring.map((c: number[]) => `${c[0]},${c[1]},0`).join(" ");
+    if (geom.type === "Polygon" && geom.coordinates?.[0]) {
+      return { coordinates: anelStr(geom.coordinates[0]), type: "Polygon" };
     }
-    if (geojson.type === "Point" && geojson.coordinates) {
-      return { coordinates: `${geojson.coordinates[0]},${geojson.coordinates[1]},0`, type: "Point" };
+    if (geom.type === "MultiPolygon" && geom.coordinates?.[0]?.[0]) {
+      return { coordinates: anelStr(geom.coordinates[0][0]), type: "Polygon" };
     }
-    if (geojson.type === "MultiPolygon" && geojson.coordinates?.[0]?.[0]) {
-      const coords = geojson.coordinates[0][0].map((c: number[]) => `${c[0]},${c[1]},0`).join(" ");
-      return { coordinates: coords, type: "Polygon" };
+    // LineString (tracado aberto): renderiza como poligono — o LinearRing fecha sozinho.
+    if (geom.type === "LineString" && geom.coordinates?.length) {
+      return { coordinates: anelStr(geom.coordinates), type: "Polygon" };
+    }
+    if (geom.type === "Point" && geom.coordinates) {
+      return { coordinates: `${geom.coordinates[0]},${geom.coordinates[1]},0`, type: "Point" };
     }
     return null;
   } catch { return null; }
@@ -294,7 +349,7 @@ Deno.serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
+    const supabase = createClient(supabaseUrl, supabaseKey, { db: { schema: "perdigueiro" } });
 
     const isAuthorized = await validateAccessToken(req, supabase);
     if (!isAuthorized) {
@@ -354,34 +409,17 @@ Deno.serve(async (req) => {
     let kml = "";
 
     if (layer === "glebas" || layer === "all") {
-      const { data: glebas, error } = await supabase
-        .from("glebas")
-        .select("id, numero, apelido, status, tamanho_m2, preco, proprietario_nome, poligono_geojson, prioridade, aceita_permuta, comentarios, cidade:cidades(nome)")
-        .not("poligono_geojson", "is", null)
-        .range(0, 99999);
-      if (error) throw error;
+      const glebas = await fetchAllGlebas(supabase);
 
       if (layer === "glebas") {
-        kml = buildGlebasKml(glebas || [], appUrl);
+        kml = buildGlebasKml(glebas, appUrl);
       } else {
-        const { data: terrenos, error: err2 } = await supabase
-          .from("pesquisa_mercado_terrenos")
-          .select("*, pesquisa:pesquisas_mercado(nome, data_pesquisa, cidade:cidades(nome))")
-          .not("latitude", "is", null)
-          .not("longitude", "is", null)
-          .range(0, 99999);
-        if (err2) throw err2;
-        kml = buildAllKml(glebas || [], terrenos || [], appUrl);
+        const terrenos = await fetchAllTerrenos(supabase);
+        kml = buildAllKml(glebas, terrenos, appUrl);
       }
     } else if (layer === "pesquisa") {
-      const { data: terrenos, error } = await supabase
-        .from("pesquisa_mercado_terrenos")
-        .select("*, pesquisa:pesquisas_mercado(nome, data_pesquisa, cidade:cidades(nome))")
-        .not("latitude", "is", null)
-        .not("longitude", "is", null)
-        .range(0, 99999);
-      if (error) throw error;
-      kml = buildPesquisaKml(terrenos || []);
+      const terrenos = await fetchAllTerrenos(supabase);
+      kml = buildPesquisaKml(terrenos);
     } else {
       kml = buildGlebasKml([], appUrl);
     }
