@@ -141,14 +141,15 @@ export default function Mapa() {
   const [fStatus, setFStatus] = usePersistedState<string>("perdigueiro_mapa_status", "all");
   const [fBusca, setFBusca] = usePersistedState<string>("perdigueiro_mapa_busca", "");
   const [fPrioridade, setFPrioridade] = usePersistedState<boolean>("perdigueiro_mapa_prioridade", false);
+  const [mostrarPesquisas, setMostrarPesquisas] = usePersistedState<boolean>("perdigueiro_mapa_pesquisas", true);
   const [userPos, setUserPos] = useState<{ lon: number; lat: number } | null>(null);
   const [locating, setLocating] = useState(false);
   const [focusTarget, setFocusTarget] = useState<{ lon: number; lat: number; alt?: number } | null>(null);
   const [fitSignal, setFitSignal] = useState(0);
 
-  const temFiltro = fCidadeId !== "all" || fStatus !== "all" || fBusca.trim() !== "" || fPrioridade || !!userPos;
+  const temFiltro = fCidadeId !== "all" || fStatus !== "all" || fBusca.trim() !== "" || fPrioridade || !mostrarPesquisas || !!userPos;
   const limparFiltros = () => {
-    setUserPos(null); setFCidadeId("all"); setFStatus("all"); setFBusca(""); setFPrioridade(false);
+    setUserPos(null); setFCidadeId("all"); setFStatus("all"); setFBusca(""); setFPrioridade(false); setMostrarPesquisas(true);
   };
 
   // Só as cidades que têm gleba (dropdown enxuto).
@@ -656,6 +657,16 @@ export default function Mapa() {
         </Button>
 
         <Button
+          variant={mostrarPesquisas ? "default" : "outline"}
+          size="sm"
+          onClick={() => setMostrarPesquisas(!mostrarPesquisas)}
+          title={mostrarPesquisas ? "Esconder os pins de Pesquisa de Mercado" : "Mostrar os pins de Pesquisa de Mercado"}
+        >
+          <MapPin className="h-4 w-4 mr-2" />
+          Pesquisas
+        </Button>
+
+        <Button
           variant="outline"
           size="sm"
           onClick={() => setFitSignal((n) => n + 1)}
@@ -692,7 +703,7 @@ export default function Mapa() {
           {!isLoading && (
             <GlebaMap3D
               glebas={glebasVisiveis}
-              pesquisaTerrenos={pesquisaPins}
+              pesquisaTerrenos={mostrarPesquisas ? pesquisaPins : []}
               onSelectGleba={setSelectedGleba}
               selectedGlebaId={selectedGleba?.id}
               isFullscreen={isFullscreen}
