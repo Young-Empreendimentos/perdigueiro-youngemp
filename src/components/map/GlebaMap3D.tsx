@@ -91,31 +91,42 @@ interface GlebaMap3DProps {
   fitSignal?: number;
 }
 
+// Numa FeatureCollection, escolhe a 1ª feature com geometria de contorno (área/linha).
+// O Google Earth costuma incluir junto um Point (ícone/rótulo) que NÃO é o contorno —
+// pegar sempre features[0] fazia a gleba localizar mas não desenhar (ex.: #1274).
+function melhorGeometria(geojson: any): any {
+  if (geojson?.type === "FeatureCollection" && geojson.features?.length) {
+    for (const t of ["Polygon", "MultiPolygon", "LineString"]) {
+      const f = geojson.features.find((x: any) => x?.geometry?.type === t);
+      if (f) return f.geometry;
+    }
+    return geojson.features[0]?.geometry ?? null; // fallback (ex.: só Point)
+  }
+  if (geojson?.type === "Feature") return geojson.geometry ?? null;
+  return geojson;
+}
+
+// Anel de coordenadas [lon,lat][] de uma geometria. LineString (traçado aberto)
+// é tratado como anel — o polígono fecha sozinho ao renderizar.
+function anelDaGeometria(geom: any): number[][] | null {
+  if (!geom) return null;
+  if (geom.type === "Polygon" && geom.coordinates?.[0]) return geom.coordinates[0];
+  if (geom.type === "MultiPolygon" && geom.coordinates?.[0]?.[0]) return geom.coordinates[0][0];
+  if (geom.type === "LineString" && geom.coordinates?.length) return geom.coordinates;
+  return null;
+}
+
 // Converte GeoJSON para array de Cartesian3
 function geoJsonToCartesian3Array(geojson: any): Cartesian3[] | null {
   if (!geojson) return null;
-
   try {
-    let coordinates: number[][] = [];
-
-    if (geojson.type === "FeatureCollection" && geojson.features?.length > 0) {
-      return geoJsonToCartesian3Array(geojson.features[0]);
+    const geom = melhorGeometria(geojson);
+    if (!geom) return null;
+    if (geom.type === "Point" && geom.coordinates) {
+      return [Cartesian3.fromDegrees(geom.coordinates[0], geom.coordinates[1])];
     }
-
-    if (geojson.type === "Feature" && geojson.geometry) {
-      return geoJsonToCartesian3Array(geojson.geometry);
-    }
-
-    if (geojson.type === "Polygon" && geojson.coordinates?.[0]) {
-      coordinates = geojson.coordinates[0];
-    } else if (geojson.type === "MultiPolygon" && geojson.coordinates?.[0]?.[0]) {
-      coordinates = geojson.coordinates[0][0];
-    } else if (geojson.type === "Point" && geojson.coordinates) {
-      return [Cartesian3.fromDegrees(geojson.coordinates[0], geojson.coordinates[1])];
-    } else {
-      return null;
-    }
-
+    const coordinates = anelDaGeometria(geom);
+    if (!coordinates) return null;
     return coordinates.map((coord) => Cartesian3.fromDegrees(coord[0], coord[1]));
   } catch (error) {
     console.error("Erro ao converter GeoJSON:", error);
@@ -126,28 +137,14 @@ function geoJsonToCartesian3Array(geojson: any): Cartesian3[] | null {
 // Calcula o centro de um polígono em graus
 function getPolygonCenterDegrees(geojson: any): { lon: number; lat: number } | null {
   if (!geojson) return null;
-
   try {
-    let coordinates: number[][] = [];
-
-    if (geojson.type === "FeatureCollection" && geojson.features?.length > 0) {
-      return getPolygonCenterDegrees(geojson.features[0]);
+    const geom = melhorGeometria(geojson);
+    if (!geom) return null;
+    if (geom.type === "Point" && geom.coordinates) {
+      return { lon: geom.coordinates[0], lat: geom.coordinates[1] };
     }
-
-    if (geojson.type === "Feature" && geojson.geometry) {
-      return getPolygonCenterDegrees(geojson.geometry);
-    }
-
-    if (geojson.type === "Polygon" && geojson.coordinates?.[0]) {
-      coordinates = geojson.coordinates[0];
-    } else if (geojson.type === "MultiPolygon" && geojson.coordinates?.[0]?.[0]) {
-      coordinates = geojson.coordinates[0][0];
-    } else if (geojson.type === "Point" && geojson.coordinates) {
-      return { lon: geojson.coordinates[0], lat: geojson.coordinates[1] };
-    } else {
-      return null;
-    }
-
+    const coordinates = anelDaGeometria(geom);
+    if (!coordinates || coordinates.length === 0) return null;
     let sumLon = 0, sumLat = 0;
     for (const coord of coordinates) {
       sumLon += coord[0];
