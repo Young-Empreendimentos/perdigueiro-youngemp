@@ -15,6 +15,7 @@ import { useCidades } from "@/hooks/useCidades";
 import { useQuery } from "@tanstack/react-query";
 import { supabase, perdigueiroDb } from "@/integrations/supabase/client";
 import { exportarGlebaKml, glebaTemPoligono } from "@/lib/glebaKmlExport";
+import { abrirArquivoPrivado } from "@/lib/arquivoPrivado";
 import {
   Select,
   SelectContent,
@@ -595,18 +596,31 @@ export function GlebaDetailsDialog({
                     </a>
                   </Button>
                 )}
+                {/* Protocolo e contrato ficam em buckets privados: abre por link temporário */}
                 {gleba.arquivo_protocolo && (
-                  <Button variant="outline" size="sm" asChild>
-                    <a href={gleba.arquivo_protocolo} target="_blank" rel="noopener noreferrer">
-                      <ExternalLink className="h-4 w-4 mr-2" />Protocolo
-                    </a>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={async () => {
+                      if (!(await abrirArquivoPrivado("protocolos", gleba.arquivo_protocolo!))) {
+                        toast.error("Não foi possível acessar o arquivo");
+                      }
+                    }}
+                  >
+                    <ExternalLink className="h-4 w-4 mr-2" />Protocolo
                   </Button>
                 )}
                 {gleba.arquivo_contrato && (
-                  <Button variant="outline" size="sm" asChild>
-                    <a href={gleba.arquivo_contrato} target="_blank" rel="noopener noreferrer">
-                      <ExternalLink className="h-4 w-4 mr-2" />Contrato
-                    </a>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={async () => {
+                      if (!(await abrirArquivoPrivado("contratos", gleba.arquivo_contrato!))) {
+                        toast.error("Não foi possível acessar o arquivo");
+                      }
+                    }}
+                  >
+                    <ExternalLink className="h-4 w-4 mr-2" />Contrato
                   </Button>
                 )}
               </div>

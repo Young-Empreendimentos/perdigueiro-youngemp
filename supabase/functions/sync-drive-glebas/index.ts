@@ -210,40 +210,40 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // Criar cliente Supabase com service role para cron jobs
+    // Só membros ativos do Perdigueiro (10/11/2026). Antes, chamada sem login (ou com a chave pública)
+    // era tratada como "cron" e rodava com a chave de serviço: qualquer pessoa com o endereço criava ou
+    // alterava glebas. Não existe agendamento desta função; quem chama é o botão do app, com o login da pessoa.
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
-    
-    // Verificar se é chamada de cron (sem auth) ou de usuário
-    const authHeader = req.headers.get("Authorization");
-    const isCronCall = !authHeader || authHeader === `Bearer ${supabaseAnonKey}`;
-    
-    let supabase;
-    if (isCronCall) {
-      // Cron job: usar service role
-      supabase = createClient(supabaseUrl, supabaseServiceKey);
-    } else {
-      // Usuário: verificar autenticação
-      if (!authHeader?.startsWith("Bearer ")) {
-        return new Response(JSON.stringify({ error: "Unauthorized" }), {
-          status: 401,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      supabase = createClient(supabaseUrl, supabaseAnonKey, {
-        global: { headers: { Authorization: authHeader } },
+
+    const authHeader = req.headers.get("Authorization") ?? "";
+    if (!authHeader.startsWith("Bearer ") || authHeader === `Bearer ${supabaseAnonKey}`) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
-      
-      // Verificar usuário
-      const token = authHeader.replace("Bearer ", "");
-      const { data: userData, error: userError } = await supabase.auth.getUser(token);
-      if (userError || !userData?.user) {
-        return new Response(JSON.stringify({ error: "Unauthorized" }), {
-          status: 401,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
+    }
+    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+      db: { schema: "perdigueiro" },
+      global: { headers: { Authorization: authHeader } },
+    });
+
+    const token = authHeader.replace("Bearer ", "");
+    const { data: userData, error: userError } = await supabase.auth.getUser(token);
+    if (userError || !userData?.user) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const { data: autorizado, error: autorizadoError } = await supabase
+      .schema("public")
+      .rpc("perdigueiro_esta_autorizado");
+    if (autorizadoError || autorizado !== true) {
+      return new Response(JSON.stringify({ error: "Só membros do Perdigueiro podem sincronizar" }), {
+        status: 403,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     // Obter fileId: do body ou da configuração do sistema

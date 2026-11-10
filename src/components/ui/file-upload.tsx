@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { Upload, X, FileText, Loader2 } from "lucide-react";
+import { abrirArquivoPrivado, ehBucketPrivado } from "@/lib/arquivoPrivado";
 
 interface FileUploadProps {
   bucket: string;
@@ -85,14 +86,34 @@ export function FileUpload({
       {currentFileUrl ? (
         <div className="flex items-center gap-2 p-3 bg-muted rounded-lg">
           <FileText className="h-5 w-5 text-primary flex-shrink-0" />
-          <a
-            href={currentFileUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-sm text-primary hover:underline truncate flex-1"
-          >
-            {getFileName(currentFileUrl)}
-          </a>
+          {ehBucketPrivado(bucket) ? (
+            // Bucket privado: o endereço gravado não abre direto; gera um link temporário no clique.
+            <button
+              type="button"
+              onClick={async () => {
+                const ok = await abrirArquivoPrivado(bucket, currentFileUrl);
+                if (!ok) {
+                  toast({
+                    variant: "destructive",
+                    title: "Erro",
+                    description: "Não foi possível abrir o arquivo",
+                  });
+                }
+              }}
+              className="text-sm text-primary hover:underline truncate flex-1 text-left"
+            >
+              {getFileName(currentFileUrl)}
+            </button>
+          ) : (
+            <a
+              href={currentFileUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-sm text-primary hover:underline truncate flex-1"
+            >
+              {getFileName(currentFileUrl)}
+            </a>
+          )}
           {onRemove && (
             <Button
               type="button"
