@@ -3,8 +3,9 @@ project_id = "vvtympzatclvjaqucebr"
 [functions.serve-kml-network-link]
 verify_jwt = false
 
+# Exige login de membro do Perdigueiro desde 10/11/2026 (o app chama com o login da pessoa).
 [functions.sync-drive-glebas]
-verify_jwt = false
+verify_jwt = true
 
 [functions.process-kmz]
 verify_jwt = false
@@ -19,4 +20,11 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.list-drive-files]
+verify_jwt = false
+
+# Desativadas em 10/11/2026 (só respondem 410).
+[functions.test-drive-kml]
+verify_jwt = false
+
+[functions.delete-user]
 verify_jwt = false

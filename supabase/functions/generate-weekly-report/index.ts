@@ -58,7 +58,7 @@ async function sendEmailsViaResend(
   return { sent, failed };
 }
 
-// ─── Semester goal helper ───────────────────────────────────────────
+// ─── Semester goal helper ───
 function getSemesterGoalData(now: Date) {
   const currentMonth = now.getMonth();
   const semesterStartMonth = currentMonth < 6 ? 0 : 6;
@@ -82,23 +82,23 @@ function renderGoalSection(negociosCount: number, weeksLeft: number): string {
     </div>`;
 }
 
-// ─── Report: weekly_new_business ────────────────────────────────────
+// ─── Report: weekly_new_business ───
 async function buildNewBusinessReport(supabase: any): Promise<string> {
   const now = new Date();
   const { effectiveStart, weeksLeft } = getSemesterGoalData(now);
 
   const { data: negociosSemestre } = await supabase
-    .from("glebas").select("id").eq("status", "negocio_fechado")
+    .schema("perdigueiro").from("glebas").select("id").eq("status", "negocio_fechado")
     .gte("data_fechamento", effectiveStart.toISOString().split("T")[0]);
   const negociosCount = negociosSemestre?.length || 0;
 
   const tenDaysAgo = new Date(now);
   tenDaysAgo.setDate(tenDaysAgo.getDate() - 10);
   const { data: recentActivities } = await supabase
-    .from("atividades").select("gleba_id").gte("created_at", tenDaysAgo.toISOString());
+    .schema("perdigueiro").from("atividades").select("gleba_id").gte("created_at", tenDaysAgo.toISOString());
   const activeGlebaIds = new Set((recentActivities || []).map((a: any) => a.gleba_id).filter(Boolean));
 
-  const { data: allGlebas } = await supabase.from("glebas").select("id, apelido, numero, status");
+  const { data: allGlebas } = await supabase.schema("perdigueiro").from("glebas").select("id, apelido, numero, status");
   const excludedStatuses = ["descartada", "negocio_fechado", "proposta_recusada", "standby"];
   const inactiveGlebas = (allGlebas || []).filter(
     (g: any) => !excludedStatuses.includes(g.status) && !activeGlebaIds.has(g.id)
@@ -107,7 +107,7 @@ async function buildNewBusinessReport(supabase: any): Promise<string> {
   const oneWeekAgo = new Date(now);
   oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
   const { data: weekActivities } = await supabase
-    .from("atividades").select("id, responsavel_id").gte("created_at", oneWeekAgo.toISOString());
+    .schema("perdigueiro").from("atividades").select("id, responsavel_id").gte("created_at", oneWeekAgo.toISOString());
   const tasksByUser: Record<string, number> = {};
   (weekActivities || []).forEach((a: any) => {
     tasksByUser[a.responsavel_id] = (tasksByUser[a.responsavel_id] || 0) + 1;
@@ -157,49 +157,44 @@ async function buildNewBusinessReport(supabase: any): Promise<string> {
     </div>`;
 }
 
-// ─── Report: weekly_directorate ─────────────────────────────────────
+// ─── Report: weekly_directorate ───
 async function buildDirectorateReport(supabase: any): Promise<string> {
   const now = new Date();
   const { effectiveStart, weeksLeft } = getSemesterGoalData(now);
 
-  // Semester goal
   const { data: negociosSemestre } = await supabase
-    .from("glebas").select("id").eq("status", "negocio_fechado")
+    .schema("perdigueiro").from("glebas").select("id").eq("status", "negocio_fechado")
     .gte("data_fechamento", effectiveStart.toISOString().split("T")[0]);
   const negociosCount = negociosSemestre?.length || 0;
 
-  // Glebas in target statuses
   const { data: glebas } = await supabase
-    .from("glebas")
+    .schema("perdigueiro").from("glebas")
     .select("id, apelido, numero, status, tamanho_m2, preco, cidade_id, updated_at, created_at, proprietario_nome")
     .in("status", ["proposta_enviada", "visita_realizada"])
     .order("status", { ascending: true });
 
   const glebaIds = (glebas || []).map((g: any) => g.id);
 
-  // Fetch proposals for these glebas
   let propostas: any[] = [];
   if (glebaIds.length > 0) {
     const { data } = await supabase
-      .from("propostas")
+      .schema("perdigueiro").from("propostas")
       .select("id, gleba_id, tipo, data_proposta, preco_ha, percentual_proposto, descricao")
       .in("gleba_id", glebaIds)
       .order("data_proposta", { ascending: false });
     propostas = data || [];
   }
 
-  // Fetch activities for these glebas
   let atividades: any[] = [];
   if (glebaIds.length > 0) {
     const { data } = await supabase
-      .from("atividades")
+      .schema("perdigueiro").from("atividades")
       .select("id, gleba_id, descricao, data, responsavel_id")
       .in("gleba_id", glebaIds)
       .order("data", { ascending: false });
     atividades = data || [];
   }
 
-  // Get user names for activities
   const responsavelIds = [...new Set(atividades.map((a: any) => a.responsavel_id).filter(Boolean))];
   let userNames: Record<string, string> = {};
   if (responsavelIds.length > 0) {
@@ -207,11 +202,10 @@ async function buildDirectorateReport(supabase: any): Promise<string> {
     (profiles || []).forEach((p: any) => { userNames[p.user_id] = p.nome || p.user_id; });
   }
 
-  // Fetch city names
   const cidadeIds = [...new Set((glebas || []).map((g: any) => g.cidade_id).filter(Boolean))];
   let cidadeNames: Record<string, string> = {};
   if (cidadeIds.length > 0) {
-    const { data: cidades } = await supabase.from("cidades").select("id, nome").in("id", cidadeIds);
+    const { data: cidades } = await supabase.schema("perdigueiro").from("cidades").select("id, nome").in("id", cidadeIds);
     (cidades || []).forEach((c: any) => { cidadeNames[c.id] = c.nome; });
   }
 
@@ -225,7 +219,6 @@ async function buildDirectorateReport(supabase: any): Promise<string> {
 
   const reportDate = now.toLocaleDateString("pt-BR", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
 
-  // Build gleba sections
   const glebasSections = (glebas || []).map((g: any) => {
     const glebaPropostas = propostas.filter((p: any) => p.gleba_id === g.id);
     const glebaAtividades = atividades.filter((a: any) => a.gleba_id === g.id);
@@ -234,30 +227,11 @@ async function buildDirectorateReport(supabase: any): Promise<string> {
 
     const propostasHtml = glebaPropostas.length === 0
       ? '<p style="color: #94a3b8; font-size: 13px; margin: 4px 0;">Nenhuma proposta registrada.</p>'
-      : `<table style="width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 4px;">
-          <tr style="border-bottom: 1px solid #e2e8f0;">
-            <th style="text-align: left; padding: 4px 6px; color: #64748b;">Data</th>
-            <th style="text-align: left; padding: 4px 6px; color: #64748b;">Tipo</th>
-            <th style="text-align: right; padding: 4px 6px; color: #64748b;">R$/ha</th>
-            <th style="text-align: right; padding: 4px 6px; color: #64748b;">Permuta %</th>
-          </tr>
-          ${glebaPropostas.map((p: any) => `<tr>
-            <td style="padding: 4px 6px;">${new Date(p.data_proposta).toLocaleDateString("pt-BR")}</td>
-            <td style="padding: 4px 6px;">${tipoLabels[p.tipo] || p.tipo}</td>
-            <td style="text-align: right; padding: 4px 6px;">${p.preco_ha ? p.preco_ha.toLocaleString("pt-BR") : "—"}</td>
-            <td style="text-align: right; padding: 4px 6px;">${p.percentual_proposto != null ? p.percentual_proposto + "%" : "—"}</td>
-          </tr>`).join("")}
-        </table>`;
+      : `<table style="width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 4px;"><tr style="border-bottom: 1px solid #e2e8f0;"><th style="text-align: left; padding: 4px 6px; color: #64748b;">Data</th><th style="text-align: left; padding: 4px 6px; color: #64748b;">Tipo</th><th style="text-align: right; padding: 4px 6px; color: #64748b;">R$/ha</th><th style="text-align: right; padding: 4px 6px; color: #64748b;">Permuta %</th></tr>${glebaPropostas.map((p: any) => `<tr><td style="padding: 4px 6px;">${new Date(p.data_proposta).toLocaleDateString("pt-BR")}</td><td style="padding: 4px 6px;">${tipoLabels[p.tipo] || p.tipo}</td><td style="text-align: right; padding: 4px 6px;">${p.preco_ha ? p.preco_ha.toLocaleString("pt-BR") : "—"}</td><td style="text-align: right; padding: 4px 6px;">${p.percentual_proposto != null ? p.percentual_proposto + "%" : "—"}</td></tr>`).join("")}</table>`;
 
     const atividadesHtml = glebaAtividades.length === 0
       ? '<p style="color: #94a3b8; font-size: 13px; margin: 4px 0;">Nenhuma atividade registrada.</p>'
-      : `<ul style="padding-left: 16px; margin: 4px 0; font-size: 13px;">
-          ${glebaAtividades.slice(0, 10).map((a: any) => `<li style="margin: 3px 0;">
-            <span style="color: #64748b;">${new Date(a.data).toLocaleDateString("pt-BR")}</span> — ${a.descricao}
-            <span style="color: #94a3b8; font-size: 11px;">(${userNames[a.responsavel_id] || "—"})</span>
-          </li>`).join("")}
-          ${glebaAtividades.length > 10 ? `<li style="color: #94a3b8;">... e mais ${glebaAtividades.length - 10} atividades</li>` : ""}
-        </ul>`;
+      : `<ul style="padding-left: 16px; margin: 4px 0; font-size: 13px;">${glebaAtividades.slice(0, 10).map((a: any) => `<li style="margin: 3px 0;"><span style="color: #64748b;">${new Date(a.data).toLocaleDateString("pt-BR")}</span> — ${a.descricao} <span style="color: #94a3b8; font-size: 11px;">(${userNames[a.responsavel_id] || "—"})</span></li>`).join("")}${glebaAtividades.length > 10 ? `<li style="color: #94a3b8;">... e mais ${glebaAtividades.length - 10} atividades</li>` : ""}</ul>`;
 
     const statusColor = g.status === "proposta_enviada" ? "#8b5cf6" : "#f59e0b";
 
@@ -265,20 +239,14 @@ async function buildDirectorateReport(supabase: any): Promise<string> {
       <div style="border: 1px solid #e2e8f0; border-radius: 10px; padding: 16px; margin: 12px 0; border-left: 4px solid ${statusColor};">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
           <h3 style="margin: 0; font-size: 15px;">#${g.numero || "?"} ${g.apelido}</h3>
-          <span style="background: ${statusColor}20; color: ${statusColor}; padding: 2px 10px; border-radius: 12px; font-size: 12px; font-weight: 600;">
-            ${statusLabels[g.status] || g.status}
-          </span>
+          <span style="background: ${statusColor}20; color: ${statusColor}; padding: 2px 10px; border-radius: 12px; font-size: 12px; font-weight: 600;">${statusLabels[g.status] || g.status}</span>
         </div>
-        <p style="color: #64748b; font-size: 13px; margin: 4px 0;">
-          ${cidade ? `📍 ${cidade}` : ""} ${areaHa !== "—" ? ` · ${areaHa} ha` : ""} ${g.proprietario_nome ? ` · ${g.proprietario_nome}` : ""}
-        </p>
+        <p style="color: #64748b; font-size: 13px; margin: 4px 0;">${cidade ? `📍 ${cidade}` : ""} ${areaHa !== "—" ? ` · ${areaHa} ha` : ""} ${g.proprietario_nome ? ` · ${g.proprietario_nome}` : ""}</p>
         <p style="color: #94a3b8; font-size: 12px; margin: 2px 0;">Última atualização: ${new Date(g.updated_at).toLocaleDateString("pt-BR")}</p>
-
         <div style="margin-top: 12px;">
           <h4 style="font-size: 13px; color: #334155; margin: 0 0 4px 0;">📄 Propostas</h4>
           ${propostasHtml}
         </div>
-
         <div style="margin-top: 12px;">
           <h4 style="font-size: 13px; color: #334155; margin: 0 0 4px 0;">📝 Histórico de Atividades</h4>
           ${atividadesHtml}
@@ -293,9 +261,7 @@ async function buildDirectorateReport(supabase: any): Promise<string> {
     <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 700px; margin: 0 auto; padding: 20px; color: #1a1a2e;">
       <h1 style="color: #1e40af; border-bottom: 3px solid #1e40af; padding-bottom: 12px; font-size: 22px;">📋 Relatório Semanal — Diretoria</h1>
       <p style="color: #64748b; font-size: 14px;">${reportDate}</p>
-
       ${renderGoalSection(negociosCount, weeksLeft)}
-
       <div style="display: flex; gap: 12px; margin: 16px 0;">
         <div style="flex: 1; background: #fef3c7; border-radius: 10px; padding: 14px; text-align: center;">
           <p style="font-size: 24px; font-weight: 700; margin: 0; color: #f59e0b;">${visitaCount}</p>
@@ -306,16 +272,13 @@ async function buildDirectorateReport(supabase: any): Promise<string> {
           <p style="font-size: 12px; color: #64748b; margin: 4px 0 0;">Proposta Enviada</p>
         </div>
       </div>
-
       ${(glebas || []).length === 0
         ? '<p style="color: #64748b; text-align: center; padding: 20px;">Nenhuma gleba em Visita Realizada ou Proposta Enviada.</p>'
         : glebasSections}
-
       <p style="color: #94a3b8; font-size: 12px; text-align: center; margin-top: 30px;">Gerado automaticamente pelo sistema Perdigueiro</p>
     </div>`;
 }
 
-// ─── Report registry ────────────────────────────────────────────────
 const REPORT_BUILDERS: Record<string, (supabase: any) => Promise<string>> = {
   weekly_new_business: buildNewBusinessReport,
   weekly_directorate: buildDirectorateReport,
@@ -337,75 +300,100 @@ const REPORT_SUBJECTS: Record<string, (now: Date) => string> = {
   weekly_directorate: (now) => `📋 Relatório Semanal — Diretoria (${now.toLocaleDateString("pt-BR")})`,
 };
 
-// ─── Main handler ───────────────────────────────────────────────────
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
+  const json = (obj: unknown, status = 200) =>
+    new Response(JSON.stringify(obj), {
+      status,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
     const supabase = createClient(supabaseUrl, serviceKey);
     const now = new Date();
 
-    // Auto-seed all report configs
+    // Quem pode chamar (10/11/2026; antes a edge respondia a qualquer pessoa na internet):
+    // 1) o agendamento de segunda (pg_cron, jobs 1 e 2): manda o cabeçalho x-cron-secret com a senha guardada
+    //    no Vault (nome perdigueiro_relatorio_cron), conferida pela função public.perdigueiro_relatorio_cron_ok;
+    // 2) a tela Configurações: login de admin do Perdigueiro (public.perdigueiro_esta_admin()).
+    let agendado = false;
+    const cronSecret = req.headers.get("x-cron-secret");
+    if (cronSecret) {
+      const { data: ok, error } = await supabase.rpc("perdigueiro_relatorio_cron_ok", { p_segredo: cronSecret });
+      if (error || ok !== true) return json({ error: "Não autorizado" }, 401);
+      agendado = true;
+    } else {
+      const authHeader = req.headers.get("Authorization") ?? "";
+      const token = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : "";
+      if (!token) return json({ error: "Não autorizado" }, 401);
+      const { data: userData, error: userError } = await supabase.auth.getUser(token);
+      if (userError || !userData?.user) return json({ error: "Não autorizado" }, 401);
+      const userClient = createClient(supabaseUrl, anonKey, {
+        global: { headers: { Authorization: `Bearer ${token}` } },
+      });
+      const { data: isAdmin, error: adminError } = await userClient.rpc("perdigueiro_esta_admin");
+      if (adminError || isAdmin !== true) {
+        return json({ error: "Só admin do Perdigueiro pode gerar ou enviar o relatório" }, 403);
+      }
+    }
+
     for (const [key, seed] of Object.entries(REPORT_SEEDS)) {
       const { data: existing } = await supabase
-        .from("report_configs").select("id").eq("report_key", key).maybeSingle();
+        .schema("perdigueiro").from("report_configs").select("id").eq("report_key", key).maybeSingle();
       if (!existing) {
-        await supabase.from("report_configs").insert({
+        await supabase.schema("perdigueiro").from("report_configs").insert({
           report_key: key, nome: seed.nome, descricao: seed.descricao, ativo: false,
         });
       }
     }
 
-    // Parse request body
     let body: any = {};
     try { body = await req.json(); } catch {}
     const reportKey = body?.report_key || "weekly_new_business";
-    const force = body?.force === true;
+    // "force" (gerar/enviar mesmo com o relatório desligado) só vale para o admin na tela.
+    // O agendamento respeita a chave "Ativo" da tela Configurações.
+    const force = !agendado && body?.force === true;
     const sendEmail = body?.sendEmail === true;
 
-    // Get config for requested report
     const { data: config } = await supabase
-      .from("report_configs").select("*").eq("report_key", reportKey).single();
+      .schema("perdigueiro").from("report_configs").select("*").eq("report_key", reportKey).single();
 
-    if (!config?.ativo && !force && !sendEmail) {
-      return new Response(
-        JSON.stringify({ message: "Relatório desativado" }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+    if (!config?.ativo && !force) {
+      return json({ message: "Relatório desativado", enviado: false });
     }
 
-    // Build report
+    // Teste do agendamento sem gerar nem mandar nada: {"dry": true}.
+    if (agendado && body?.dry === true) {
+      return json({ dry: true, report_key: reportKey, ativo: config?.ativo ?? false, destinatarios: (config?.destinatarios || []).length });
+    }
+
     const builder = REPORT_BUILDERS[reportKey];
     if (!builder) {
-      return new Response(
-        JSON.stringify({ error: `Tipo de relatório desconhecido: ${reportKey}` }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return json({ error: `Tipo de relatório desconhecido: ${reportKey}` }, 400);
     }
     const html = await builder(supabase);
+    // O agendamento não devolve o HTML na resposta (ela fica gravada em net._http_response).
+    const resposta = (extra: Record<string, unknown>) =>
+      json(agendado ? { success: true, ...extra } : { success: true, html, ...extra });
 
-    // Update config
     await supabase
-      .from("report_configs")
+      .schema("perdigueiro").from("report_configs")
       .update({ ultimo_envio: now.toISOString(), ultimo_relatorio_html: html })
       .eq("report_key", reportKey);
 
-    // Send emails if requested
     let emailResult = null;
     if (sendEmail) {
       const destinatarios = config?.destinatarios || [];
       if (destinatarios.length === 0) {
-        return new Response(
-          JSON.stringify({ success: true, html, emailResult: { sent: 0, failed: [], message: "Nenhum destinatário configurado" } }),
-          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
+        return resposta({ emailResult: { sent: 0, failed: [], message: "Nenhum destinatário configurado" } });
       }
 
-      // Fetch recipient emails directly (service role bypasses RLS)
       const recipientData: { id: string; email: string; nome: string }[] = [];
       for (const userId of destinatarios) {
         const { data: { user } } = await supabase.auth.admin.getUserById(userId);
@@ -424,24 +412,15 @@ Deno.serve(async (req) => {
       }
 
       if (recipientData.length === 0) {
-        return new Response(
-          JSON.stringify({ success: true, html, emailResult: { sent: 0, failed: [], message: "Nenhum e-mail encontrado para os destinatários" } }),
-          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
+        return resposta({ emailResult: { sent: 0, failed: [], message: "Nenhum e-mail encontrado para os destinatários" } });
       }
       const subjectFn = REPORT_SUBJECTS[reportKey] || REPORT_SUBJECTS.weekly_new_business;
       emailResult = await sendEmailsViaResend(html, recipientData, subjectFn(now));
     }
 
-    return new Response(
-      JSON.stringify({ success: true, html, emailResult }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+    return resposta({ emailResult });
   } catch (error) {
     console.error("Error generating report:", error);
-    return new Response(
-      JSON.stringify({ error: error.message }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+    return json({ error: error.message }, 500);
   }
 });

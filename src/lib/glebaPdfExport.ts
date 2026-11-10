@@ -37,7 +37,7 @@ export async function exportGlebaToPdf(gleba: Gleba) {
     profilesRes,
   ] = await Promise.all([
     gleba.cidade_id
-      ? perdigueiroDb.from("cidades").select("nome, uf").eq("id", gleba.cidade_id).maybeSingle()
+      ? perdigueiroDb.from("cidades").select("nome").eq("id", gleba.cidade_id).maybeSingle()
       : Promise.resolve({ data: null } as any),
     gleba.imobiliaria_id
       ? perdigueiroDb.from("imobiliarias").select("nome").eq("id", gleba.imobiliaria_id).maybeSingle()
@@ -63,7 +63,8 @@ export async function exportGlebaToPdf(gleba: Gleba) {
     supabase.from("user_profiles").select("user_id, nome"),
   ]);
 
-  const cidade = cidadeRes?.data as { nome: string; uf: string } | null;
+  // O nome da cidade já vem como "Cidade/UF" (cidades não tem coluna uf).
+  const cidade = cidadeRes?.data as { nome: string } | null;
   const imobiliaria = imobRes?.data as { nome: string } | null;
   const motivo = motivoRes?.data as { nome: string } | null;
   const atividades = atividadesRes.data ?? [];
@@ -90,7 +91,7 @@ export async function exportGlebaToPdf(gleba: Gleba) {
   doc.setFont("helvetica", "normal");
   doc.setFontSize(10);
   const subtitle = [
-    cidade ? `${cidade.nome}/${cidade.uf}` : null,
+    cidade ? cidade.nome : null,
     STATUS_LABELS[gleba.status] || gleba.status,
     gleba.prioridade ? "Prioritária" : null,
   ]
@@ -173,7 +174,7 @@ export async function exportGlebaToPdf(gleba: Gleba) {
     ["Apelido", gleba.apelido],
     ["Status", STATUS_LABELS[gleba.status] || gleba.status],
     ["Prioritária", gleba.prioridade ? "Sim" : "Não"],
-    ["Cidade", cidade ? `${cidade.nome}/${cidade.uf}` : "-"],
+    ["Cidade", cidade?.nome || "-"],
     ["Proprietário", gleba.proprietario_nome || "-"],
     ["Telefone", (gleba as any).proprietario_telefone || "-"],
     ["Imobiliária", imobiliaria?.nome || "-"],
@@ -238,8 +239,10 @@ export async function exportGlebaToPdf(gleba: Gleba) {
   // Arquivos
   const arquivos: [string, string][] = [];
   if (gleba.arquivo_kmz) arquivos.push(["KMZ", gleba.arquivo_kmz]);
-  if ((gleba as any).arquivo_protocolo) arquivos.push(["Protocolo", (gleba as any).arquivo_protocolo]);
-  if ((gleba as any).arquivo_contrato) arquivos.push(["Contrato", (gleba as any).arquivo_contrato]);
+  // Protocolo e contrato ficam em buckets privados: o endereço gravado não abre fora do app,
+  // e um link temporário no PDF daria acesso ao contrato a quem recebesse o arquivo.
+  if ((gleba as any).arquivo_protocolo) arquivos.push(["Protocolo", "Anexado no Perdigueiro (abrir pelo app)"]);
+  if ((gleba as any).arquivo_contrato) arquivos.push(["Contrato", "Anexado no Perdigueiro (abrir pelo app)"]);
   if ((gleba as any).google_drive_folder_id)
     arquivos.push([
       "Pasta Google Drive",
